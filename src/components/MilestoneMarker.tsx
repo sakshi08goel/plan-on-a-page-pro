@@ -25,15 +25,13 @@ export const MilestoneMarker = ({ type, label, position }: MilestoneMarkerProps)
 
   return (
     <div 
-      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 group"
+      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-1"
       style={{ left: `${position}%` }}
     >
-      <div className="relative">
-        {getIcon()}
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg border border-border">
-          {label}
-        </div>
-      </div>
+      {getIcon()}
+      <span className="text-[10px] text-foreground font-medium text-center max-w-[80px] leading-tight">
+        {label}
+      </span>
     </div>
   );
 };
