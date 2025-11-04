@@ -4,41 +4,61 @@ import { TimelineHeader } from '@/components/TimelineHeader';
 import { RoadmapRow } from '@/components/RoadmapRow';
 import { ProgramSection } from '@/components/ProgramSection';
 import { MilestoneMarker } from '@/components/MilestoneMarker';
-import { PhaseBar } from '@/components/PhaseBar';
 import { Legend } from '@/components/Legend';
-import { Download } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [roadmapData, setRoadmapData] = useState<RoadmapData[]>([]);
 
-  // Sample data structure grouped by program
-  const samplePrograms = {
-    'Deposits': [
-      { journey: 'Run The Bank', type: 'Core Services' },
-      { journey: '95D Product', type: 'Product Development' },
-      { journey: 'Maturity', type: 'Feature Enhancement' },
-      { journey: 'Funding IAS', type: 'Infrastructure' },
-      { journey: 'Notice Account Servicing', type: 'Customer Service' },
-      { journey: 'AOV Modernisation & TODS', type: 'Modernization' },
-      { journey: 'Client Money Onboarding', type: 'Onboarding' },
-    ],
-    'FX': [
-      { journey: 'FX Convert', type: 'Core Feature' },
-    ],
-    'VISA': [
-      { journey: 'VISA Debit Card Issuance', type: 'Card Services' },
-    ],
-    'CMAS': [
-      { journey: 'Card Management Proxy Services', type: 'Management Tools' },
-    ],
+  // Calculate position on timeline (0-100%) based on date
+  const calculatePosition = (dateString: string) => {
+    if (!dateString) return 50;
+    
+    try {
+      const date = new Date(dateString);
+      const startDate = new Date('2025-07-01'); // Q3 2025 start
+      const endDate = new Date('2026-06-30'); // Q2 2026 end
+      
+      const totalDuration = endDate.getTime() - startDate.getTime();
+      const elapsed = date.getTime() - startDate.getTime();
+      const position = (elapsed / totalDuration) * 100;
+      
+      return Math.max(0, Math.min(100, position));
+    } catch {
+      return 50;
+    }
+  };
+
+  // Group roadmap data by program
+  const groupedData = roadmapData.reduce((acc, item) => {
+    if (!acc[item.program]) {
+      acc[item.program] = [];
+    }
+    acc[item.program].push(item);
+    return acc;
+  }, {} as Record<string, RoadmapData[]>);
+
+  // Get unique journeys per program
+  const programJourneys = Object.entries(groupedData).reduce((acc, [program, items]) => {
+    const journeys = Array.from(new Set(items.map(item => item.journey)));
+    acc[program] = journeys;
+    return acc;
+  }, {} as Record<string, string[]>);
+
+  // Get milestones for a specific journey
+  const getMilestonesForJourney = (program: string, journey: string) => {
+    return roadmapData.filter(
+      item => item.program === program && item.journey === journey
+    );
   };
 
   const downloadTemplate = () => {
     const template = [
       ['Program', 'Journey', 'Milestone Type', 'Delivery Milestone', 'Planned Delivery Date'],
       ['Deposits', 'Maturity', 'Key', 'Maturity-Cosumer Go-live', '2025-10-15'],
-      ['FX', 'FX Convert', 'Milestone', 'Tech Drop 1', '2026-03-01'],
+      ['Deposits', 'Notice Account Servicing', 'Milestone', 'Tech Drop 1', '2026-03-01'],
+      ['FX', 'FX Convert', 'Milestone', 'FX outward via core convert', '2025-09-15'],
     ];
     
     const csvContent = template.map(row => row.join(',')).join('\n');
@@ -75,47 +95,51 @@ const Index = () => {
           <Legend />
         </div>
 
-        <div className="mb-4">
-          <TimelineHeader />
-        </div>
-
-        {Object.entries(samplePrograms).map(([programName, journeys]) => (
-          <ProgramSection key={programName} programName={programName}>
-            {journeys.map((item, idx) => (
-              <RoadmapRow key={`${programName}-${idx}`} journey={item.journey} category={item.type}>
-                {/* Demo milestones - these would be data-driven */}
-                {item.journey === 'Run The Bank' && (
-                  <PhaseBar label="Warranty & Run Support" startPosition={0} endPosition={100} color="cyan" />
-                )}
-                {item.journey === 'Maturity' && (
-                  <>
-                    <MilestoneMarker type="triangle" label="Maturity review screen" position={8} />
-                    <MilestoneMarker type="star" label="Maturity-Cosumer Go-live" position={35} />
-                  </>
-                )}
-                {item.journey === 'Notice Account Servicing' && (
-                  <>
-                    <PhaseBar label="Understand & Incubation" startPosition={25} endPosition={58} color="orange" />
-                    <MilestoneMarker type="circle" label="Decoupling Strategy" position={65} />
-                    <MilestoneMarker type="triangle" label="Tech Drop 1" position={75} />
-                  </>
-                )}
-                {item.journey === 'FX Convert' && (
-                  <>
-                    <MilestoneMarker type="triangle" label="FX outward via core convert" position={28} />
-                    <MilestoneMarker type="triangle" label="Tech Drop 1" position={75} />
-                  </>
-                )}
-              </RoadmapRow>
-            ))}
-          </ProgramSection>
-        ))}
-
-        {roadmapData.length > 0 && (
-          <div className="mt-6 bg-card border border-border rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-3">Loaded Data</h2>
-            <p className="text-sm text-muted-foreground">{roadmapData.length} milestones loaded from Excel</p>
+        {roadmapData.length === 0 ? (
+          <div className="bg-card border-2 border-dashed border-border rounded-lg p-12 text-center">
+            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold mb-2">No Data Loaded</h2>
+            <p className="text-muted-foreground mb-4">
+              Upload an Excel file with your roadmap data to get started
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Required columns: Program, Journey, Milestone Type, Delivery Milestone, Planned Delivery Date
+            </p>
+            <Button onClick={downloadTemplate} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Download Template
+            </Button>
           </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              <TimelineHeader />
+            </div>
+
+            {Object.entries(programJourneys).map(([programName, journeys]) => (
+              <ProgramSection key={programName} programName={programName}>
+                {journeys.map((journey, idx) => (
+                  <RoadmapRow key={`${programName}-${idx}`} journey={journey}>
+                    {getMilestonesForJourney(programName, journey).map((milestone, mIdx) => (
+                      <MilestoneMarker
+                        key={`${programName}-${journey}-${mIdx}`}
+                        type={milestone.milestoneType}
+                        label={milestone.deliveryMilestone}
+                        position={calculatePosition(milestone.plannedDeliveryDate)}
+                      />
+                    ))}
+                  </RoadmapRow>
+                ))}
+              </ProgramSection>
+            ))}
+
+            <div className="mt-6 bg-card border border-border rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-3">Loaded Data Summary</h2>
+              <p className="text-sm text-muted-foreground">
+                {roadmapData.length} milestones across {Object.keys(programJourneys).length} programs
+              </p>
+            </div>
+          </>
         )}
       </main>
     </div>
