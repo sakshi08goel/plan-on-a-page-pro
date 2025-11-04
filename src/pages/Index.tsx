@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FileUpload, RoadmapData } from '@/components/FileUpload';
 import { TimelineHeader } from '@/components/TimelineHeader';
 import { RoadmapRow } from '@/components/RoadmapRow';
+import { ProgramSection } from '@/components/ProgramSection';
 import { MilestoneMarker } from '@/components/MilestoneMarker';
 import { PhaseBar } from '@/components/PhaseBar';
 import { Legend } from '@/components/Legend';
@@ -11,19 +12,27 @@ import { Button } from '@/components/ui/button';
 const Index = () => {
   const [roadmapData, setRoadmapData] = useState<RoadmapData[]>([]);
 
-  // Sample data structure for demo
-  const sampleJourneys = [
-    { category: 'Deposits', journey: 'Run The Bank' },
-    { category: 'Deposits', journey: '95D Product' },
-    { category: 'Deposits', journey: 'Maturity' },
-    { category: 'Deposits', journey: 'Funding IAS' },
-    { category: 'Deposits', journey: 'Notice Account Servicing' },
-    { category: 'Deposits', journey: 'AOV Modernisation & TODS' },
-    { category: 'Deposits', journey: 'Client Money Onboarding' },
-    { category: 'FX', journey: 'FX Convert' },
-    { category: 'VISA', journey: 'VISA Debit Card Issuance' },
-    { category: 'CMAS', journey: 'Card Management Proxy Services' },
-  ];
+  // Sample data structure grouped by program
+  const samplePrograms = {
+    'Deposits': [
+      { journey: 'Run The Bank', type: 'Core Services' },
+      { journey: '95D Product', type: 'Product Development' },
+      { journey: 'Maturity', type: 'Feature Enhancement' },
+      { journey: 'Funding IAS', type: 'Infrastructure' },
+      { journey: 'Notice Account Servicing', type: 'Customer Service' },
+      { journey: 'AOV Modernisation & TODS', type: 'Modernization' },
+      { journey: 'Client Money Onboarding', type: 'Onboarding' },
+    ],
+    'FX': [
+      { journey: 'FX Convert', type: 'Core Feature' },
+    ],
+    'VISA': [
+      { journey: 'VISA Debit Card Issuance', type: 'Card Services' },
+    ],
+    'CMAS': [
+      { journey: 'Card Management Proxy Services', type: 'Management Tools' },
+    ],
+  };
 
   const downloadTemplate = () => {
     const template = [
@@ -66,12 +75,14 @@ const Index = () => {
           <Legend />
         </div>
 
-        <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+        <div className="mb-4">
           <TimelineHeader />
-          
-          <div className="divide-y divide-border">
-            {sampleJourneys.map((item, idx) => (
-              <RoadmapRow key={idx} journey={item.journey} category={item.category}>
+        </div>
+
+        {Object.entries(samplePrograms).map(([programName, journeys]) => (
+          <ProgramSection key={programName} programName={programName}>
+            {journeys.map((item, idx) => (
+              <RoadmapRow key={`${programName}-${idx}`} journey={item.journey} category={item.type}>
                 {/* Demo milestones - these would be data-driven */}
                 {item.journey === 'Run The Bank' && (
                   <PhaseBar label="Warranty & Run Support" startPosition={0} endPosition={100} color="cyan" />
@@ -97,8 +108,8 @@ const Index = () => {
                 )}
               </RoadmapRow>
             ))}
-          </div>
-        </div>
+          </ProgramSection>
+        ))}
 
         {roadmapData.length > 0 && (
           <div className="mt-6 bg-card border border-border rounded-lg p-4">
