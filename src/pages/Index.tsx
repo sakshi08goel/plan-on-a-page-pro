@@ -47,7 +47,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-foreground">2025 Deliveries – Plan on a Page</h1>
+              <h1 className="text-2xl font-bold text-foreground">2025 Deliveries - Plan on a Page</h1>
               <p className="text-sm text-muted-foreground mt-1">Program delivery roadmap visualization</p>
             </div>
             <div className="flex gap-2">
