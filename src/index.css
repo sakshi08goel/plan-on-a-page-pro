@@ -46,7 +46,8 @@ All colors MUST be HSL.
     
     --timeline-phase: 35 100% 50%;
     --timeline-milestone: 200 95% 25%;
-    --timeline-key: 145 65% 45%;
+    --timeline-key: 280 75% 55%;
+    --timeline-checkpoint: 145 65% 45%;
 
     --sidebar-background: 0 0% 98%;
 
@@ -102,7 +103,8 @@ All colors MUST be HSL.
     
     --timeline-phase: 35 100% 45%;
     --timeline-milestone: 195 100% 85%;
-    --timeline-key: 145 65% 40%;
+    --timeline-key: 280 75% 65%;
+    --timeline-checkpoint: 145 65% 50%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;

@@ -14,7 +14,7 @@ export const Legend = () => {
           <span>Delivery Milestone</span>
         </div>
         <div className="flex items-center gap-2">
-          <Circle className="h-3 w-3 fill-[hsl(var(--success))] text-[hsl(var(--success))]" />
+          <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
           <span>Checkpoint</span>
         </div>
         <div className="flex items-center gap-2">

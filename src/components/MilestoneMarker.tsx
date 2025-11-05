@@ -17,7 +17,7 @@ export const MilestoneMarker = ({ type, label, position }: MilestoneMarkerProps)
         return <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />;
       case 'checkpoint':
       case 'circle':
-        return <Circle className="h-3 w-3 fill-[hsl(var(--success))] text-[hsl(var(--success))]" />;
+        return <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />;
       default:
         return <Circle className="h-3 w-3 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />;
     }
