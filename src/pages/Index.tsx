@@ -70,19 +70,22 @@ const Index = () => {
 
     // Detect overlaps (within 5% of timeline = approximately same month)
     const overlapThreshold = 5;
-    const milestonesWithOffset = milestonesWithPosition.map((milestone, idx) => {
+    const milestonesWithOffset: Array<any> = [];
+    
+    for (let idx = 0; idx < milestonesWithPosition.length; idx++) {
+      const milestone = milestonesWithPosition[idx];
       let verticalOffset = 0;
       
       // Check for overlaps with previous milestones
       for (let i = 0; i < idx; i++) {
         const prevMilestone = milestonesWithOffset[i];
         if (Math.abs(milestone.position - prevMilestone.position) < overlapThreshold) {
-          verticalOffset = Math.max(verticalOffset, (prevMilestone.verticalOffset || 0) + 1);
+          verticalOffset = Math.max(verticalOffset, prevMilestone.verticalOffset + 1);
         }
       }
       
-      return { ...milestone, verticalOffset };
-    });
+      milestonesWithOffset.push({ ...milestone, verticalOffset });
+    }
 
     return milestonesWithOffset;
   };
