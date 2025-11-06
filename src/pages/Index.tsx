@@ -11,17 +11,27 @@ import { Button } from '@/components/ui/button';
 const Index = () => {
   const [roadmapData, setRoadmapData] = useState<RoadmapData[]>([]);
 
+  // Determine dynamic timeline range based on data
+  const parsedDates = roadmapData
+    .map(d => new Date(d.plannedDeliveryDate))
+    .filter(d => !isNaN(d.getTime()));
+
+  const timelineStart = parsedDates.length
+    ? new Date(Math.min(...parsedDates.map(d => d.getTime())))
+    : new Date('2025-07-01'); // fallback
+
+  const timelineEnd = parsedDates.length
+    ? new Date(Math.max(...parsedDates.map(d => d.getTime())))
+    : new Date('2026-06-30'); // fallback
+
   // Calculate position on timeline (0-100%) based on date
   const calculatePosition = (dateString: string) => {
     if (!dateString) return 50;
     
     try {
       const date = new Date(dateString);
-      const startDate = new Date('2025-07-01'); // Q3 2025 start
-      const endDate = new Date('2026-06-30'); // Q2 2026 end
-      
-      const totalDuration = endDate.getTime() - startDate.getTime();
-      const elapsed = date.getTime() - startDate.getTime();
+      const totalDuration = timelineEnd.getTime() - timelineStart.getTime();
+      const elapsed = date.getTime() - timelineStart.getTime();
       const position = (elapsed / totalDuration) * 100;
       
       return Math.max(0, Math.min(100, position));
@@ -55,7 +65,7 @@ const Index = () => {
 
   const downloadTemplate = () => {
     const template = [
-      ['Program', 'Journey', 'Milestone Type', 'Delivery Milestone', 'Planned Delivery Date'],
+      ['Program', 'Feature', 'Milestone Type', 'Delivery Milestone', 'Planned Delivery Date'],
       ['Deposits', 'Maturity', 'Key', 'Maturity-Cosumer Go-live', '2025-10-15'],
       ['Deposits', 'Notice Account Servicing', 'Milestone', 'Tech Drop 1', '2026-03-01'],
       ['FX', 'FX Convert', 'Milestone', 'FX outward via core convert', '2025-09-15'],
@@ -103,7 +113,7 @@ const Index = () => {
               Upload an Excel file with your roadmap data to get started
             </p>
             <p className="text-sm text-muted-foreground mb-4">
-              Required columns: Program, Journey, Milestone Type, Delivery Milestone, Planned Delivery Date
+              Required columns: Program, Feature, Milestone Type, Delivery Milestone, Planned Delivery Date
             </p>
             <Button onClick={downloadTemplate} variant="outline">
               <Download className="mr-2 h-4 w-4" />

@@ -32,12 +32,29 @@ export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
+        // Normalize date values from Excel (supports Date objects, strings, and Excel serial numbers)
+        const normalizeDate = (value: any): string => {
+          const excelSerialToDate = (serial: number) => {
+            // Excel serial date: days since 1899-12-30
+            const excelEpoch = Date.UTC(1899, 11, 30);
+            const ms = excelEpoch + serial * 24 * 60 * 60 * 1000;
+            return new Date(ms);
+          };
+
+          if (!value) return '';
+          if (value instanceof Date) return value.toISOString().slice(0, 10);
+          if (typeof value === 'number') return excelSerialToDate(value).toISOString().slice(0, 10);
+
+          const d = new Date(value);
+          return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+        };
+
         const parsedData: RoadmapData[] = jsonData.map((row) => ({
           program: row.Program || row.program || '',
-          journey: row.Journey || row.journey || '',
+          journey: row.Feature || row.feature || row.Journey || row.journey || '',
           milestoneType: row['Milestone Type'] || row.milestoneType || '',
           deliveryMilestone: row['Delivery Milestone'] || row.deliveryMilestone || '',
-          plannedDeliveryDate: row['Planned Delivery Date'] || row.plannedDeliveryDate || '',
+          plannedDeliveryDate: normalizeDate(row['Planned Delivery Date'] || row.plannedDeliveryDate || row.PlannedEndDate || row.plannedEndDate),
         }));
 
         onDataLoaded(parsedData);
