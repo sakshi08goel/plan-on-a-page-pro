@@ -91,11 +91,20 @@ const Index = () => {
     return milestonesWithOffset;
   };
 
-  // Calculate row height based on max stacked milestones
+  // Calculate row height based on max stacked milestones and build phases
   const getRowHeight = (program: string, journey: string) => {
     const milestones = getMilestonesForJourney(program, journey);
-    const maxOffset = Math.max(0, ...milestones.map(m => m.verticalOffset || 0));
-    return Math.max(60, 60 + (maxOffset * 35));
+    const buildPhases = getBuildPhases(milestones);
+    
+    const maxMilestoneOffset = Math.max(0, ...milestones.map(m => m.verticalOffset || 0));
+    const hasBuildPhases = buildPhases.length > 0;
+    
+    // Base height + milestone stacking + build phase space
+    const baseHeight = 80;
+    const milestoneHeight = maxMilestoneOffset * 40;
+    const buildPhaseHeight = hasBuildPhases ? 45 : 0;
+    
+    return baseHeight + milestoneHeight + buildPhaseHeight;
   };
 
   // Calculate build phase bar for tech drops (63 days before)
@@ -180,9 +189,9 @@ const Index = () => {
             </Button>
           </div>
         ) : (
-          <div className="min-w-[1200px]">
+          <div className="min-w-[1400px]">
             <div className="mb-4">
-              <TimelineHeader />
+              <TimelineHeader startDate={timelineStart} endDate={timelineEnd} />
             </div>
 
             {Object.entries(programJourneys).map(([programName, journeys]) => (
