@@ -4,9 +4,10 @@ interface MilestoneMarkerProps {
   type: string;
   label: string;
   position: number;
+  verticalOffset?: number;
 }
 
-export const MilestoneMarker = ({ type, label, position }: MilestoneMarkerProps) => {
+export const MilestoneMarker = ({ type, label, position, verticalOffset = 0 }: MilestoneMarkerProps) => {
   const getIcon = () => {
     switch (type.toLowerCase()) {
       case 'key':
@@ -25,8 +26,12 @@ export const MilestoneMarker = ({ type, label, position }: MilestoneMarkerProps)
 
   return (
     <div 
-      className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center gap-1"
-      style={{ left: `${position}%` }}
+      className="absolute flex flex-col items-center gap-1"
+      style={{ 
+        left: `${position}%`, 
+        top: `${20 + (verticalOffset * 35)}px`,
+        transform: 'translateX(-50%)'
+      }}
     >
       {getIcon()}
       <span className="text-[10px] text-foreground font-medium text-center max-w-[80px] leading-tight">

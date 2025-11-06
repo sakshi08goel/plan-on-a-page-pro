@@ -56,11 +56,42 @@ const Index = () => {
     return acc;
   }, {} as Record<string, string[]>);
 
-  // Get milestones for a specific journey
+  // Get milestones for a specific journey with vertical positioning to avoid overlaps
   const getMilestonesForJourney = (program: string, journey: string) => {
-    return roadmapData.filter(
+    const milestones = roadmapData.filter(
       item => item.program === program && item.journey === journey
     );
+
+    // Sort by position on timeline
+    const milestonesWithPosition = milestones.map(m => ({
+      ...m,
+      position: calculatePosition(m.plannedDeliveryDate)
+    })).sort((a, b) => a.position - b.position);
+
+    // Detect overlaps (within 5% of timeline = approximately same month)
+    const overlapThreshold = 5;
+    const milestonesWithOffset = milestonesWithPosition.map((milestone, idx) => {
+      let verticalOffset = 0;
+      
+      // Check for overlaps with previous milestones
+      for (let i = 0; i < idx; i++) {
+        const prevMilestone = milestonesWithOffset[i];
+        if (Math.abs(milestone.position - prevMilestone.position) < overlapThreshold) {
+          verticalOffset = Math.max(verticalOffset, (prevMilestone.verticalOffset || 0) + 1);
+        }
+      }
+      
+      return { ...milestone, verticalOffset };
+    });
+
+    return milestonesWithOffset;
+  };
+
+  // Calculate row height based on max stacked milestones
+  const getRowHeight = (program: string, journey: string) => {
+    const milestones = getMilestonesForJourney(program, journey);
+    const maxOffset = Math.max(0, ...milestones.map(m => m.verticalOffset || 0));
+    return Math.max(60, 60 + (maxOffset * 35));
   };
 
   const downloadTemplate = () => {
@@ -128,18 +159,26 @@ const Index = () => {
 
             {Object.entries(programJourneys).map(([programName, journeys]) => (
               <ProgramSection key={programName} programName={programName}>
-                {journeys.map((journey, idx) => (
-                  <RoadmapRow key={`${programName}-${idx}`} journey={journey}>
-                    {getMilestonesForJourney(programName, journey).map((milestone, mIdx) => (
-                      <MilestoneMarker
-                        key={`${programName}-${journey}-${mIdx}`}
-                        type={milestone.milestoneType}
-                        label={milestone.deliveryMilestone}
-                        position={calculatePosition(milestone.plannedDeliveryDate)}
-                      />
-                    ))}
-                  </RoadmapRow>
-                ))}
+                {journeys.map((journey, idx) => {
+                  const milestones = getMilestonesForJourney(programName, journey);
+                  return (
+                    <RoadmapRow 
+                      key={`${programName}-${idx}`} 
+                      journey={journey}
+                      rowHeight={getRowHeight(programName, journey)}
+                    >
+                      {milestones.map((milestone, mIdx) => (
+                        <MilestoneMarker
+                          key={`${programName}-${journey}-${mIdx}`}
+                          type={milestone.milestoneType}
+                          label={milestone.deliveryMilestone}
+                          position={milestone.position}
+                          verticalOffset={milestone.verticalOffset}
+                        />
+                      ))}
+                    </RoadmapRow>
+                  );
+                })}
               </ProgramSection>
             ))}
 
