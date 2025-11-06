@@ -7,11 +7,11 @@ export const Legend = () => {
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div className="flex items-center gap-2">
           <Star className="h-4 w-4 fill-[hsl(var(--timeline-key))] text-[hsl(var(--timeline-key))]" />
-          <span>Key Milestone</span>
+          <span>Customer Go-Live</span>
         </div>
         <div className="flex items-center gap-2">
           <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />
-          <span>Delivery Milestone</span>
+          <span>Tech Drop</span>
         </div>
         <div className="flex items-center gap-2">
           <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
@@ -21,7 +21,7 @@ export const Legend = () => {
           <div className="h-3 w-8 bg-[hsl(var(--accent))] rounded flex items-center justify-center">
             <ArrowRight className="h-2 w-2 text-white" />
           </div>
-          <span>Phase/Stream</span>
+          <span>Build Phase (63 days)</span>
         </div>
       </div>
     </div>

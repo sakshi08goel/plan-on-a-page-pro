@@ -4,6 +4,7 @@ import { TimelineHeader } from '@/components/TimelineHeader';
 import { RoadmapRow } from '@/components/RoadmapRow';
 import { ProgramSection } from '@/components/ProgramSection';
 import { MilestoneMarker } from '@/components/MilestoneMarker';
+import { PhaseBar } from '@/components/PhaseBar';
 import { Legend } from '@/components/Legend';
 import { Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -97,6 +98,30 @@ const Index = () => {
     return Math.max(60, 60 + (maxOffset * 35));
   };
 
+  // Calculate build phase bar for tech drops (63 days before)
+  const getBuildPhases = (milestones: any[]) => {
+    return milestones
+      .filter(m => {
+        const type = m.milestoneType.toLowerCase();
+        return type.includes('tech') && type.includes('drop') || type === 'techdrop';
+      })
+      .map((m, idx) => {
+        const endDate = new Date(m.plannedDeliveryDate);
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 63); // 63 days before
+        
+        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10));
+        const endPosition = m.position;
+        
+        return {
+          id: `build-${idx}`,
+          label: `Build Phase`,
+          startPosition,
+          endPosition
+        };
+      });
+  };
+
   const downloadTemplate = () => {
     const template = [
       ['Program', 'Feature', 'Milestone Type', 'Delivery Milestone', 'Planned Delivery Date'],
@@ -117,7 +142,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+        <div className="w-full px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-foreground">2025 Deliveries - Plan on a Page</h1>
@@ -134,7 +159,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="w-full px-4 py-6 overflow-x-auto">
         <div className="mb-4">
           <Legend />
         </div>
@@ -155,7 +180,7 @@ const Index = () => {
             </Button>
           </div>
         ) : (
-          <>
+          <div className="min-w-[1200px]">
             <div className="mb-4">
               <TimelineHeader />
             </div>
@@ -164,12 +189,24 @@ const Index = () => {
               <ProgramSection key={programName} programName={programName}>
                 {journeys.map((journey, idx) => {
                   const milestones = getMilestonesForJourney(programName, journey);
+                  const buildPhases = getBuildPhases(milestones);
                   return (
                     <RoadmapRow 
                       key={`${programName}-${idx}`} 
                       journey={journey}
                       rowHeight={getRowHeight(programName, journey)}
                     >
+                      {/* Render build phases first (in background) */}
+                      {buildPhases.map((phase) => (
+                        <PhaseBar
+                          key={phase.id}
+                          label={phase.label}
+                          startPosition={phase.startPosition}
+                          endPosition={phase.endPosition}
+                          color="orange"
+                        />
+                      ))}
+                      {/* Render milestones on top */}
                       {milestones.map((milestone, mIdx) => (
                         <MilestoneMarker
                           key={`${programName}-${journey}-${mIdx}`}
@@ -191,7 +228,7 @@ const Index = () => {
                 {roadmapData.length} milestones across {Object.keys(programJourneys).length} programs
               </p>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>
