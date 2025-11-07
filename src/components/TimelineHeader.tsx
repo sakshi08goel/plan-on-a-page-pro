@@ -1,58 +1,15 @@
-interface TimelineHeaderProps {
-  startDate: Date;
-  endDate: Date;
-}
-
-export const TimelineHeader = ({ startDate, endDate }: TimelineHeaderProps) => {
-  // Generate dynamic quarters based on date range
-  const generateQuarters = () => {
-    const quarters: Array<{ year: string; quarter: string; months: string[] }> = [];
-    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    // Start from the beginning of the start month
-    start.setDate(1);
-    
-    // Round down to quarter start
-    const startQuarter = Math.floor(start.getMonth() / 3);
-    start.setMonth(startQuarter * 3);
-    
-    // Round up to quarter end
-    const endQuarter = Math.ceil((end.getMonth() + 1) / 3);
-    const endMonth = endQuarter * 3;
-    
-    let current = new Date(start);
-    
-    while (current <= end || current.getFullYear() < end.getFullYear() || 
-           (current.getFullYear() === end.getFullYear() && current.getMonth() < endMonth)) {
-      const year = current.getFullYear().toString();
-      const quarter = `Q${Math.floor(current.getMonth() / 3) + 1}`;
-      const months: string[] = [];
-      
-      // Add 3 months for this quarter
-      for (let i = 0; i < 3; i++) {
-        if (current <= end) {
-          months.push(monthNames[current.getMonth()]);
-          current.setMonth(current.getMonth() + 1);
-        }
-      }
-      
-      if (months.length > 0) {
-        quarters.push({ year, quarter, months });
-      }
-    }
-    
-    return quarters;
-  };
-
-  const quarters = generateQuarters();
+export const TimelineHeader = () => {
+  const quarters = [
+    { year: '2025', quarter: 'Q3', months: ['JUL', 'AUG', 'SEP'] },
+    { year: '2025', quarter: 'Q4', months: ['OCT', 'NOV', 'DEC'] },
+    { year: '2026', quarter: 'Q1', months: ['JAN', 'FEB', 'MAR'] },
+    { year: '2026', quarter: 'Q2', months: ['APR', 'MAY', 'JUN'] },
+  ];
 
   return (
     <div className="sticky top-0 z-10 bg-background border-b-2 border-border">
-      <div className="flex min-w-[1400px]">
-        <div className="w-64 flex-shrink-0 border-r border-border" />
+      <div className="flex">
+        <div className="w-48 flex-shrink-0 border-r border-border" />
         <div className="flex-1 flex">
           {quarters.map((q, idx) => (
             <div key={idx} className="flex-1">

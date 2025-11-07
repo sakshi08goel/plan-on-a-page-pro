@@ -39,15 +39,15 @@ export const MilestoneMarker = ({ type, label, position, verticalOffset = 0 }: M
 
   return (
     <div 
-      className="absolute flex flex-col items-center gap-1 z-10"
+      className="absolute flex flex-col items-center gap-1"
       style={{ 
         left: `${position}%`, 
-        top: `${15 + (verticalOffset * 40)}px`,
+        top: `${20 + (verticalOffset * 35)}px`,
         transform: 'translateX(-50%)'
       }}
     >
       {getIcon()}
-      <span className="text-[10px] text-foreground font-medium text-center max-w-[100px] leading-tight whitespace-normal break-words">
+      <span className="text-[10px] text-foreground font-medium text-center max-w-[80px] leading-tight">
         {label}
       </span>
     </div>
