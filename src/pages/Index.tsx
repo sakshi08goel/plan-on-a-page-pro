@@ -6,8 +6,9 @@ import { ProgramSection } from '@/components/ProgramSection';
 import { MilestoneMarker } from '@/components/MilestoneMarker';
 import { PhaseBar } from '@/components/PhaseBar';
 import { Legend } from '@/components/Legend';
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { exportToPowerPoint } from '@/utils/exportPowerPoint';
 
 const Index = () => {
   const [roadmapData, setRoadmapData] = useState<RoadmapData[]>([]);
@@ -139,6 +140,13 @@ const Index = () => {
     a.click();
   };
 
+  const handleExportPowerPoint = () => {
+    if (roadmapData.length === 0) {
+      return;
+    }
+    exportToPowerPoint(roadmapData);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card shadow-sm">
@@ -153,6 +161,12 @@ const Index = () => {
                 <Download className="mr-2 h-4 w-4" />
                 Download Template
               </Button>
+              {roadmapData.length > 0 && (
+                <Button onClick={handleExportPowerPoint} variant="default" size="sm">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export to PowerPoint
+                </Button>
+              )}
               <FileUpload onDataLoaded={setRoadmapData} />
             </div>
           </div>
