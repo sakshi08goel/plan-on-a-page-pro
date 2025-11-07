@@ -3,6 +3,7 @@ import { RoadmapData } from '@/components/FileUpload';
 
 export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   const pptx = new pptxgen();
+  pptx.layout = 'LAYOUT_WIDE';
   
   // Determine timeline range
   const parsedDates = roadmapData
@@ -33,29 +34,6 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     }
   };
 
-  // Title slide
-  const titleSlide = pptx.addSlide();
-  titleSlide.background = { color: 'FFFFFF' };
-  titleSlide.addText('2025 Deliveries - Plan on a Page', {
-    x: 0.5,
-    y: 2.5,
-    w: 9,
-    h: 1,
-    fontSize: 36,
-    bold: true,
-    color: '1a1a1a',
-    align: 'center'
-  });
-  titleSlide.addText('Program Delivery Roadmap', {
-    x: 0.5,
-    y: 3.5,
-    w: 9,
-    h: 0.5,
-    fontSize: 18,
-    color: '666666',
-    align: 'center'
-  });
-
   // Group data by program
   const groupedData = roadmapData.reduce((acc, item) => {
     if (!acc[item.program]) {
@@ -65,145 +43,185 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     return acc;
   }, {} as Record<string, RoadmapData[]>);
 
-  // Create visual roadmap slide for each program
-  Object.entries(groupedData).forEach(([programName, items]) => {
-    const slide = pptx.addSlide();
-    slide.background = { color: 'FFFFFF' };
+  // SINGLE SLIDE with ALL programs
+  const slide = pptx.addSlide();
+  slide.background = { color: 'FFFFFF' };
+  
+  // Title
+  slide.addText('2025 Deliveries - Plan on a Page', {
+    x: 0.3,
+    y: 0.15,
+    w: 12.7,
+    h: 0.4,
+    fontSize: 24,
+    bold: true,
+    color: '1a1a1a',
+    align: 'center'
+  });
+
+  // Legend
+  const legendY = 0.6;
+  const legendStartX = 0.5;
+  
+  slide.addShape(pptx.ShapeType.rect, {
+    x: legendStartX,
+    y: legendY,
+    w: 0.12,
+    h: 0.12,
+    fill: { color: '9933CC' }
+  });
+  slide.addText('Key Milestone', {
+    x: legendStartX + 0.15,
+    y: legendY,
+    w: 1,
+    h: 0.12,
+    fontSize: 8,
+    color: '1a1a1a',
+    valign: 'middle'
+  });
+
+  slide.addShape(pptx.ShapeType.rect, {
+    x: legendStartX + 1.3,
+    y: legendY,
+    w: 0.12,
+    h: 0.12,
+    fill: { color: '0266A6' }
+  });
+  slide.addText('Tech Drop', {
+    x: legendStartX + 1.45,
+    y: legendY,
+    w: 0.8,
+    h: 0.12,
+    fontSize: 8,
+    color: '1a1a1a',
+    valign: 'middle'
+  });
+
+  slide.addShape(pptx.ShapeType.rect, {
+    x: legendStartX + 2.4,
+    y: legendY,
+    w: 0.12,
+    h: 0.12,
+    fill: { color: '28A745' }
+  });
+  slide.addText('Checkpoint', {
+    x: legendStartX + 2.55,
+    y: legendY,
+    w: 0.9,
+    h: 0.12,
+    fontSize: 8,
+    color: '1a1a1a',
+    valign: 'middle'
+  });
+
+  slide.addShape(pptx.ShapeType.rect, {
+    x: legendStartX + 3.6,
+    y: legendY,
+    w: 0.12,
+    h: 0.12,
+    fill: { color: 'FF8800' }
+  });
+  slide.addText('Build Phase', {
+    x: legendStartX + 3.75,
+    y: legendY,
+    w: 0.9,
+    h: 0.12,
+    fontSize: 8,
+    color: '1a1a1a',
+    valign: 'middle'
+  });
+
+  // Timeline configuration
+  const timelineY = 0.85;
+  const timelineWidth = 11.2;
+  const timelineX = 1.8;
+  const labelWidth = 1.5;
+
+  // Generate quarters
+  const quarters: Array<{ label: string; startDate: Date; endDate: Date }> = [];
+  const currentQuarter = new Date(timelineStart);
+  currentQuarter.setMonth(Math.floor(currentQuarter.getMonth() / 3) * 3, 1);
+  
+  while (currentQuarter <= timelineEnd) {
+    const quarterStart = new Date(currentQuarter);
+    const quarterEnd = new Date(currentQuarter);
+    quarterEnd.setMonth(quarterEnd.getMonth() + 3, 0);
     
-    // Program title
-    slide.addText(programName, {
-      x: 0.3,
-      y: 0.2,
-      w: 9.4,
-      h: 0.4,
-      fontSize: 20,
+    const q = Math.floor(quarterStart.getMonth() / 3) + 1;
+    const year = quarterStart.getFullYear();
+    
+    quarters.push({
+      label: `Q${q} ${year}`,
+      startDate: quarterStart,
+      endDate: quarterEnd
+    });
+    
+    currentQuarter.setMonth(currentQuarter.getMonth() + 3);
+  }
+
+  // Draw quarter headers
+  quarters.forEach((quarter, idx) => {
+    const qWidth = timelineWidth / quarters.length;
+    const qX = timelineX + (idx * qWidth);
+    
+    slide.addShape(pptx.ShapeType.rect, {
+      x: qX,
+      y: timelineY,
+      w: qWidth,
+      h: 0.3,
+      fill: { color: 'E8E8E8' },
+      line: { color: 'CCCCCC', width: 1 }
+    });
+    
+    slide.addText(quarter.label, {
+      x: qX,
+      y: timelineY,
+      w: qWidth,
+      h: 0.3,
+      fontSize: 9,
       bold: true,
-      color: '1a1a1a'
+      color: '1a1a1a',
+      align: 'center',
+      valign: 'middle'
     });
+  });
 
-    // Legend
-    const legendY = 0.65;
+  // Draw all programs
+  let currentY = timelineY + 0.35;
+  const rowHeight = 0.35;
+
+  Object.entries(groupedData).forEach(([programName, items]) => {
+    // Program header row
     slide.addShape(pptx.ShapeType.rect, {
       x: 0.3,
-      y: legendY,
-      w: 0.15,
-      h: 0.15,
-      fill: { color: 'FFD700' }
+      y: currentY,
+      w: labelWidth,
+      h: 0.3,
+      fill: { color: '0266A6' },
+      line: { color: 'CCCCCC', width: 1 }
     });
-    slide.addText('Key Milestone', {
-      x: 0.5,
-      y: legendY,
-      w: 1.2,
-      h: 0.15,
-      fontSize: 9,
-      color: '1a1a1a',
-      valign: 'middle'
-    });
-
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 1.8,
-      y: legendY,
-      w: 0.15,
-      h: 0.15,
-      fill: { color: '4169E1' }
-    });
-    slide.addText('Tech Drop', {
-      x: 2.0,
-      y: legendY,
-      w: 1.2,
-      h: 0.15,
-      fontSize: 9,
-      color: '1a1a1a',
-      valign: 'middle'
-    });
-
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 3.3,
-      y: legendY,
-      w: 0.15,
-      h: 0.15,
-      fill: { color: '32CD32' }
-    });
-    slide.addText('Checkpoint', {
-      x: 3.5,
-      y: legendY,
-      w: 1.2,
-      h: 0.15,
-      fontSize: 9,
-      color: '1a1a1a',
-      valign: 'middle'
-    });
-
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 4.8,
-      y: legendY,
-      w: 0.15,
-      h: 0.15,
-      fill: { color: 'FFA500' }
-    });
-    slide.addText('Build Phase', {
-      x: 5.0,
-      y: legendY,
-      w: 1.2,
-      h: 0.15,
-      fontSize: 9,
-      color: '1a1a1a',
-      valign: 'middle'
-    });
-
-    // Timeline header area
-    const timelineY = 0.95;
-    const timelineWidth = 7.2;
-    const timelineX = 2.5;
-
-    // Generate quarters between start and end
-    const quarters: Array<{ label: string; startDate: Date; endDate: Date }> = [];
-    const currentQuarter = new Date(timelineStart);
-    currentQuarter.setMonth(Math.floor(currentQuarter.getMonth() / 3) * 3, 1);
     
-    while (currentQuarter <= timelineEnd) {
-      const quarterStart = new Date(currentQuarter);
-      const quarterEnd = new Date(currentQuarter);
-      quarterEnd.setMonth(quarterEnd.getMonth() + 3, 0);
-      
-      const q = Math.floor(quarterStart.getMonth() / 3) + 1;
-      const year = quarterStart.getFullYear();
-      
-      quarters.push({
-        label: `Q${q} ${year}`,
-        startDate: quarterStart,
-        endDate: quarterEnd
-      });
-      
-      currentQuarter.setMonth(currentQuarter.getMonth() + 3);
-    }
-
-    // Draw quarter headers
-    quarters.forEach((quarter, idx) => {
-      const qWidth = timelineWidth / quarters.length;
-      const qX = timelineX + (idx * qWidth);
-      
-      slide.addShape(pptx.ShapeType.rect, {
-        x: qX,
-        y: timelineY,
-        w: qWidth,
-        h: 0.3,
-        fill: { color: 'E8E8E8' },
-        line: { color: 'CCCCCC', width: 1 }
-      });
-      
-      slide.addText(quarter.label, {
-        x: qX,
-        y: timelineY,
-        w: qWidth,
-        h: 0.3,
-        fontSize: 9,
-        bold: true,
-        color: '1a1a1a',
-        align: 'center',
-        valign: 'middle'
-      });
+    slide.addText(programName, {
+      x: 0.35,
+      y: currentY,
+      w: labelWidth - 0.1,
+      h: 0.3,
+      fontSize: 10,
+      bold: true,
+      color: 'FFFFFF',
+      valign: 'middle'
     });
+
+    slide.addShape(pptx.ShapeType.rect, {
+      x: timelineX,
+      y: currentY,
+      w: timelineWidth,
+      h: 0.3,
+      fill: { color: 'D6EAF8' },
+      line: { color: 'CCCCCC', width: 1 }
+    });
+
+    currentY += 0.32;
 
     // Group by journey
     const journeyGroups = items.reduce((acc, item) => {
@@ -214,11 +232,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
       return acc;
     }, {} as Record<string, RoadmapData[]>);
 
-    // Draw swimlanes
-    let currentY = timelineY + 0.35;
-    const rowHeight = 0.5;
-    const labelWidth = 2.2;
-
+    // Draw each journey
     Object.entries(journeyGroups).forEach(([journey, milestones]) => {
       // Journey label
       slide.addShape(pptx.ShapeType.rect, {
@@ -235,18 +249,18 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         y: currentY,
         w: labelWidth - 0.1,
         h: rowHeight,
-        fontSize: 9,
+        fontSize: 8,
         color: '1a1a1a',
         valign: 'middle'
       });
 
-      // Swimlane background
+      // Swimlane background - light cyan
       slide.addShape(pptx.ShapeType.rect, {
         x: timelineX,
         y: currentY,
         w: timelineWidth,
         h: rowHeight,
-        fill: { color: 'F0F4F8' },
+        fill: { color: 'B3F5FF' },
         line: { color: 'CCCCCC', width: 1 }
       });
 
@@ -256,7 +270,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         position: calculatePosition(m.plannedDeliveryDate)
       })).sort((a, b) => a.position - b.position);
 
-      // Assign vertical offsets for overlapping milestones
+      // Assign vertical offsets
       const milestonesWithOffset: Array<any> = [];
       const overlapThreshold = 5;
       
@@ -293,103 +307,80 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           
           slide.addShape(pptx.ShapeType.rect, {
             x: barX,
-            y: currentY + 0.35,
+            y: currentY + rowHeight - 0.08,
             w: barWidth,
-            h: 0.08,
-            fill: { color: 'FFA500' }
+            h: 0.06,
+            fill: { color: 'FF8800' }
           });
         });
 
       // Draw milestones
       milestonesWithOffset.forEach(milestone => {
         const milestoneX = timelineX + (milestone.position / 100 * timelineWidth);
-        const offsetY = milestone.verticalOffset * 0.15;
-        const milestoneY = currentY + 0.1 + offsetY;
+        const offsetY = milestone.verticalOffset * 0.12;
+        const milestoneY = currentY + 0.08 + offsetY;
         
-        let color = '32CD32'; // default checkpoint
-        let shape = pptx.ShapeType.ellipse;
-        let size = 0.12;
+        let color = '28A745'; // green checkpoint
+        let size = 0.1;
         
         const lowerType = milestone.milestoneType.toLowerCase();
         
         if ((lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) || 
             lowerType === 'key' || lowerType === 'star') {
-          color = 'FFD700'; // gold star
-          shape = pptx.ShapeType.rect; // using rect as star shape
-          size = 0.15;
+          color = '9933CC'; // purple star
+          size = 0.12;
         } else if ((lowerType.includes('tech') && lowerType.includes('drop')) || 
                    lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop') {
-          color = '4169E1'; // blue triangle
-          shape = pptx.ShapeType.rect;
-          size = 0.13;
+          color = '0266A6'; // dark blue triangle
+          size = 0.11;
         }
         
         // Draw milestone marker
-        slide.addShape(shape, {
+        slide.addShape(pptx.ShapeType.rect, {
           x: milestoneX - (size / 2),
           y: milestoneY,
           w: size,
           h: size,
-          fill: { color: color }
+          fill: { color: color },
+          line: { color: color, width: 1 }
         });
         
         // Add milestone label
-        slide.addText(milestone.deliveryMilestone, {
-          x: milestoneX - 0.3,
-          y: milestoneY + size + 0.02,
-          w: 0.6,
-          h: 0.15,
-          fontSize: 7,
+        const labelText = milestone.deliveryMilestone.length > 20 
+          ? milestone.deliveryMilestone.substring(0, 18) + '...' 
+          : milestone.deliveryMilestone;
+          
+        slide.addText(labelText, {
+          x: milestoneX - 0.25,
+          y: milestoneY + size + 0.01,
+          w: 0.5,
+          h: 0.12,
+          fontSize: 6,
           color: '1a1a1a',
           align: 'center',
           breakLine: true
         });
       });
 
-      currentY += rowHeight + 0.05;
+      currentY += rowHeight + 0.02;
     });
+
+    currentY += 0.05; // Extra space between programs
   });
 
-  // Summary slide
-  const summarySlide = pptx.addSlide();
-  summarySlide.background = { color: 'FFFFFF' };
-  summarySlide.addText('Summary', {
-    x: 0.5,
-    y: 1.5,
-    w: 9,
-    h: 0.6,
-    fontSize: 28,
-    bold: true,
-    color: '1a1a1a'
-  });
-
-  const programCount = Object.keys(groupedData).length;
-  const totalMilestones = roadmapData.length;
-  
-  summarySlide.addText([
-    { text: 'Total Programs: ', options: { bold: true } },
-    { text: programCount.toString() }
-  ], {
-    x: 1,
-    y: 2.5,
-    w: 8,
-    h: 0.5,
-    fontSize: 18,
-    color: '1a1a1a'
-  });
-
-  summarySlide.addText([
-    { text: 'Total Milestones: ', options: { bold: true } },
-    { text: totalMilestones.toString() }
-  ], {
-    x: 1,
-    y: 3.2,
-    w: 8,
-    h: 0.5,
-    fontSize: 18,
-    color: '1a1a1a'
+  // Summary at bottom
+  const summaryY = currentY + 0.1;
+  slide.addText(`Total: ${Object.keys(groupedData).length} Programs  |  ${roadmapData.length} Milestones`, {
+    x: 0.3,
+    y: summaryY,
+    w: 12.7,
+    h: 0.25,
+    fontSize: 9,
+    color: '666666',
+    align: 'center',
+    valign: 'middle'
   });
 
   // Generate and download
-  pptx.writeFile({ fileName: '2025-Deliveries-Roadmap.pptx' });
+  pptx.writeFile({ fileName: '2025-Deliveries-Plan-on-a-Page.pptx' });
 };
