@@ -188,7 +188,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   // Draw all programs
   let currentY = timelineY + 0.35;
-  const rowHeight = 0.35;
+  const baseRowHeight = 0.4;
+  const milestoneVerticalSpacing = 0.15;
 
   Object.entries(groupedData).forEach(([programName, items]) => {
     // Program header row
@@ -234,6 +235,36 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
     // Draw each journey
     Object.entries(journeyGroups).forEach(([journey, milestones]) => {
+      // Process milestones first to calculate required height
+      const processedMilestones = milestones.map(m => ({
+        ...m,
+        position: calculatePosition(m.plannedDeliveryDate)
+      })).sort((a, b) => a.position - b.position);
+
+      // Assign vertical offsets with better spacing
+      const milestonesWithOffset: Array<any> = [];
+      const overlapThreshold = 8; // Increased to prevent label overlap
+      
+      for (let idx = 0; idx < processedMilestones.length; idx++) {
+        const milestone = processedMilestones[idx];
+        let verticalOffset = 0;
+        
+        for (let i = 0; i < idx; i++) {
+          const prevMilestone = milestonesWithOffset[i];
+          if (Math.abs(milestone.position - prevMilestone.position) < overlapThreshold) {
+            verticalOffset = Math.max(verticalOffset, prevMilestone.verticalOffset + 1);
+          }
+        }
+        
+        milestonesWithOffset.push({ ...milestone, verticalOffset });
+      }
+
+      // Calculate dynamic row height based on max vertical offset
+      const maxOffset = milestonesWithOffset.length > 0 
+        ? Math.max(...milestonesWithOffset.map(m => m.verticalOffset))
+        : 0;
+      const rowHeight = Math.max(baseRowHeight, baseRowHeight + (maxOffset * milestoneVerticalSpacing));
+
       // Journey label
       slide.addShape(pptx.ShapeType.rect, {
         x: 0.3,
@@ -264,30 +295,6 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         line: { color: 'CCCCCC', width: 1 }
       });
 
-      // Process milestones
-      const processedMilestones = milestones.map(m => ({
-        ...m,
-        position: calculatePosition(m.plannedDeliveryDate)
-      })).sort((a, b) => a.position - b.position);
-
-      // Assign vertical offsets
-      const milestonesWithOffset: Array<any> = [];
-      const overlapThreshold = 5;
-      
-      for (let idx = 0; idx < processedMilestones.length; idx++) {
-        const milestone = processedMilestones[idx];
-        let verticalOffset = 0;
-        
-        for (let i = 0; i < idx; i++) {
-          const prevMilestone = milestonesWithOffset[i];
-          if (Math.abs(milestone.position - prevMilestone.position) < overlapThreshold) {
-            verticalOffset = Math.max(verticalOffset, prevMilestone.verticalOffset + 1);
-          }
-        }
-        
-        milestonesWithOffset.push({ ...milestone, verticalOffset });
-      }
-
       // Draw build phases
       milestonesWithOffset
         .filter(m => {
@@ -317,8 +324,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
       // Draw milestones
       milestonesWithOffset.forEach(milestone => {
         const milestoneX = timelineX + (milestone.position / 100 * timelineWidth);
-        const offsetY = milestone.verticalOffset * 0.12;
-        const milestoneY = currentY + 0.08 + offsetY;
+        const offsetY = milestone.verticalOffset * milestoneVerticalSpacing;
+        const milestoneY = currentY + 0.1 + offsetY;
         
         let color = '28A745'; // green checkpoint
         let size = 0.1;
@@ -345,16 +352,16 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           line: { color: color, width: 1 }
         });
         
-        // Add milestone label
-        const labelText = milestone.deliveryMilestone.length > 20 
-          ? milestone.deliveryMilestone.substring(0, 18) + '...' 
+        // Add milestone label with better spacing
+        const labelText = milestone.deliveryMilestone.length > 25 
+          ? milestone.deliveryMilestone.substring(0, 23) + '...' 
           : milestone.deliveryMilestone;
           
         slide.addText(labelText, {
-          x: milestoneX - 0.25,
-          y: milestoneY + size + 0.01,
-          w: 0.5,
-          h: 0.12,
+          x: milestoneX - 0.3,
+          y: milestoneY + size + 0.02,
+          w: 0.6,
+          h: 0.13,
           fontSize: 6,
           color: '1a1a1a',
           align: 'center',
