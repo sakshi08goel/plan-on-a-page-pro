@@ -254,10 +254,9 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         valign: 'middle'
       });
 
-      // Swimlane background - light cyan, aligned with quarters
-      const firstQuarterX = timelineX;
+      // Swimlane background - light cyan
       slide.addShape(pptx.ShapeType.rect, {
-        x: firstQuarterX,
+        x: timelineX,
         y: currentY,
         w: timelineWidth,
         h: rowHeight,
@@ -315,17 +314,11 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           });
         });
 
-      // Draw milestones with better positioning to avoid build phase overlap
+      // Draw milestones
       milestonesWithOffset.forEach(milestone => {
         const milestoneX = timelineX + (milestone.position / 100 * timelineWidth);
-        // Alternate milestones above and below center to avoid overlap with build phase
-        const isTechDrop = (milestone.milestoneType.toLowerCase().includes('tech') && 
-                           milestone.milestoneType.toLowerCase().includes('drop')) || 
-                           milestone.milestoneType.toLowerCase() === 'techdrop';
-        // Tech drops go lower (near build phase bar), others go higher
-        const baseOffset = isTechDrop ? 0.18 : 0.02;
-        const offsetY = milestone.verticalOffset * 0.08;
-        const milestoneY = currentY + baseOffset + offsetY;
+        const offsetY = milestone.verticalOffset * 0.12;
+        const milestoneY = currentY + 0.08 + offsetY;
         
         let color = '28A745'; // green checkpoint
         let size = 0.1;
