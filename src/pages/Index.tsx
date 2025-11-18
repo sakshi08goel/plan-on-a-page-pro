@@ -9,9 +9,32 @@ import { Legend } from '@/components/Legend';
 import { Download, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { exportToPowerPoint } from '@/utils/exportPowerPoint';
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 
 const Index = () => {
   const [roadmapData, setRoadmapData] = useState<RoadmapData[]>([]);
+  const [journeyOrder, setJourneyOrder] = useState<Record<string, string[]>>({});
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Determine dynamic timeline range based on data
   const parsedDates = roadmapData
@@ -54,9 +77,22 @@ const Index = () => {
   // Get unique journeys per program
   const programJourneys = Object.entries(groupedData).reduce((acc, [program, items]) => {
     const journeys = Array.from(new Set(items.map(item => item.journey)));
-    acc[program] = journeys;
+    // Use custom order if exists, otherwise use default order
+    acc[program] = journeyOrder[program] || journeys;
     return acc;
   }, {} as Record<string, string[]>);
+
+  // Initialize journey order when data changes
+  useState(() => {
+    if (roadmapData.length > 0 && Object.keys(journeyOrder).length === 0) {
+      const initialOrder = Object.entries(groupedData).reduce((acc, [program, items]) => {
+        const journeys = Array.from(new Set(items.map(item => item.journey)));
+        acc[program] = journeys;
+        return acc;
+      }, {} as Record<string, string[]>);
+      setJourneyOrder(initialOrder);
+    }
+  });
 
   // Get milestones for a specific journey with vertical positioning to avoid overlaps
   const getMilestonesForJourney = (program: string, journey: string) => {
@@ -147,6 +183,23 @@ const Index = () => {
     exportToPowerPoint(roadmapData);
   };
 
+  const handleDragEnd = (event: DragEndEvent, programName: string) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setJourneyOrder((prevOrder) => {
+        const programJourneys = prevOrder[programName] || [];
+        const oldIndex = programJourneys.indexOf(active.id as string);
+        const newIndex = programJourneys.indexOf(over.id as string);
+
+        return {
+          ...prevOrder,
+          [programName]: arrayMove(programJourneys, oldIndex, newIndex),
+        };
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card shadow-sm">
@@ -201,38 +254,50 @@ const Index = () => {
 
             {Object.entries(programJourneys).map(([programName, journeys]) => (
               <ProgramSection key={programName} programName={programName}>
-                {journeys.map((journey, idx) => {
-                  const milestones = getMilestonesForJourney(programName, journey);
-                  const buildPhases = getBuildPhases(milestones);
-                  return (
-                    <RoadmapRow 
-                      key={`${programName}-${idx}`} 
-                      journey={journey}
-                      rowHeight={getRowHeight(programName, journey)}
-                    >
-                      {/* Render build phases first (in background) */}
-                      {buildPhases.map((phase) => (
-                        <PhaseBar
-                          key={phase.id}
-                          label={phase.label}
-                          startPosition={phase.startPosition}
-                          endPosition={phase.endPosition}
-                          color="orange"
-                        />
-                      ))}
-                      {/* Render milestones on top */}
-                      {milestones.map((milestone, mIdx) => (
-                        <MilestoneMarker
-                          key={`${programName}-${journey}-${mIdx}`}
-                          type={milestone.milestoneType}
-                          label={milestone.deliveryMilestone}
-                          position={milestone.position}
-                          verticalOffset={milestone.verticalOffset}
-                        />
-                      ))}
-                    </RoadmapRow>
-                  );
-                })}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={(event) => handleDragEnd(event, programName)}
+                >
+                  <SortableContext
+                    items={journeys}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {journeys.map((journey, idx) => {
+                      const milestones = getMilestonesForJourney(programName, journey);
+                      const buildPhases = getBuildPhases(milestones);
+                      return (
+                        <RoadmapRow 
+                          key={journey}
+                          id={journey}
+                          journey={journey}
+                          rowHeight={getRowHeight(programName, journey)}
+                        >
+                          {/* Render build phases first (in background) */}
+                          {buildPhases.map((phase) => (
+                            <PhaseBar
+                              key={phase.id}
+                              label={phase.label}
+                              startPosition={phase.startPosition}
+                              endPosition={phase.endPosition}
+                              color="orange"
+                            />
+                          ))}
+                          {/* Render milestones on top */}
+                          {milestones.map((milestone, mIdx) => (
+                            <MilestoneMarker
+                              key={`${programName}-${journey}-${mIdx}`}
+                              type={milestone.milestoneType}
+                              label={milestone.deliveryMilestone}
+                              position={milestone.position}
+                              verticalOffset={milestone.verticalOffset}
+                            />
+                          ))}
+                        </RoadmapRow>
+                      );
+                    })}
+                  </SortableContext>
+                </DndContext>
               </ProgramSection>
             ))}
 
