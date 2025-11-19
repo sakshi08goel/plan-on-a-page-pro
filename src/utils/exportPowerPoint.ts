@@ -188,8 +188,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   // Draw all programs
   let currentY = timelineY + 0.35;
-  const baseRowHeight = 0.4;
-  const milestoneVerticalSpacing = 0.15;
+  const baseRowHeight = 0.55;
+  const milestoneVerticalSpacing = 0.2;
 
   Object.entries(groupedData).forEach(([programName, items]) => {
     // Program header row
@@ -295,7 +295,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         line: { color: 'CCCCCC', width: 1 }
       });
 
-      // Draw build phases
+      // Draw build phases (at bottom to avoid milestone overlap)
       milestonesWithOffset
         .filter(m => {
           const type = m.milestoneType.toLowerCase();
@@ -314,9 +314,9 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           
           slide.addShape(pptx.ShapeType.rect, {
             x: barX,
-            y: currentY + rowHeight - 0.08,
+            y: currentY + rowHeight - 0.1,
             w: barWidth,
-            h: 0.06,
+            h: 0.08,
             fill: { color: 'FF8800' }
           });
         });
@@ -353,16 +353,16 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         });
         
         // Add milestone label with better spacing
-        const labelText = milestone.deliveryMilestone.length > 25 
-          ? milestone.deliveryMilestone.substring(0, 23) + '...' 
+        const labelText = milestone.deliveryMilestone.length > 30 
+          ? milestone.deliveryMilestone.substring(0, 28) + '...' 
           : milestone.deliveryMilestone;
           
         slide.addText(labelText, {
-          x: milestoneX - 0.3,
+          x: milestoneX - 0.35,
           y: milestoneY + size + 0.02,
-          w: 0.6,
-          h: 0.13,
-          fontSize: 6,
+          w: 0.7,
+          h: 0.16,
+          fontSize: 7,
           color: '1a1a1a',
           align: 'center',
           breakLine: true
