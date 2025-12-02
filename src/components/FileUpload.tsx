@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
-import { Upload } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useCallback } from "react";
+import { Upload } from "lucide-react";
+import * as XLSX from "xlsx";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 export interface RoadmapData {
   program: string;
@@ -19,59 +19,92 @@ interface FileUploadProps {
 export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
   const { toast } = useToast();
 
-  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleFileUpload = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data);
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          debugger;
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+            raw: false,
+          }) as any[];
 
-        // Normalize date values from Excel (supports Date objects, strings, and Excel serial numbers)
-        const normalizeDate = (value: any): string => {
-          const excelSerialToDate = (serial: number) => {
-            // Excel serial date: days since 1899-12-30
-            const excelEpoch = Date.UTC(1899, 11, 30);
-            const ms = excelEpoch + serial * 24 * 60 * 60 * 1000;
-            return new Date(ms);
+          // Normalize date values from Excel (supports Date objects, strings, and Excel serial numbers)
+          const normalizeDate = (value: any): string => {
+            debugger;
+            const excelSerialToDate = (serial: number) => {
+              debugger;
+              // Excel serial date: days since 1899-12-30
+              const excelEpoch = Date.UTC(1899, 11, 30);
+              const ms = excelEpoch + serial * 24 * 60 * 60 * 1000;
+              return new Date(ms);
+            };
+
+            if (!value) return "";
+            if (value instanceof Date)
+              return value.toLocaleDateString("en-US", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+            if (typeof value === "number")
+              return excelSerialToDate(value).toLocaleDateString("en-US", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              });
+
+            const d = new Date(value);
+            return isNaN(d.getTime())
+              ? ""
+              : d.toLocaleDateString("en-US", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                });
           };
 
-          if (!value) return '';
-          if (value instanceof Date) return value.toISOString().slice(0, 10);
-          if (typeof value === 'number') return excelSerialToDate(value).toISOString().slice(0, 10);
+          const parsedData: RoadmapData[] = jsonData.map((row) => {
+            return {
+              program: row.Program || row.program || "",
+              journey:
+                row.Feature || row.feature || row.Journey || row.journey || "",
+              milestoneType: row["Milestone Type"] || row.milestoneType || "",
+              deliveryMilestone:
+                row["Delivery Milestone"] || row.deliveryMilestone || "",
+              plannedDeliveryDate: normalizeDate(
+                row["Planned Delivery Date"] ||
+                  row.plannedDeliveryDate ||
+                  row.PlannedEndDate ||
+                  row.plannedEndDate
+              ),
+            };
+          });
 
-          const d = new Date(value);
-          return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-        };
-
-        const parsedData: RoadmapData[] = jsonData.map((row) => ({
-          program: row.Program || row.program || '',
-          journey: row.Feature || row.feature || row.Journey || row.journey || '',
-          milestoneType: row['Milestone Type'] || row.milestoneType || '',
-          deliveryMilestone: row['Delivery Milestone'] || row.deliveryMilestone || '',
-          plannedDeliveryDate: normalizeDate(row['Planned Delivery Date'] || row.plannedDeliveryDate || row.PlannedEndDate || row.plannedEndDate),
-        }));
-
-        onDataLoaded(parsedData);
-        toast({
-          title: 'Success',
-          description: `Loaded ${parsedData.length} milestones`,
-        });
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to parse Excel file',
-          variant: 'destructive',
-        });
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }, [onDataLoaded, toast]);
+          onDataLoaded(parsedData);
+          toast({
+            title: "Success",
+            description: `Loaded ${parsedData.length} milestones`,
+          });
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: "Failed to parse Excel file",
+            variant: "destructive",
+          });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    },
+    [onDataLoaded, toast]
+  );
 
   return (
     <div className="relative">

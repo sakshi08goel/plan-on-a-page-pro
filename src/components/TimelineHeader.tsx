@@ -1,9 +1,10 @@
 export const TimelineHeader = () => {
   const quarters = [
-    { year: '2025', quarter: 'Q3', months: ['JUL', 'AUG', 'SEP'] },
+    { year: '2025', quarter: 'Q3', months: ['SEP'] },
     { year: '2025', quarter: 'Q4', months: ['OCT', 'NOV', 'DEC'] },
     { year: '2026', quarter: 'Q1', months: ['JAN', 'FEB', 'MAR'] },
     { year: '2026', quarter: 'Q2', months: ['APR', 'MAY', 'JUN'] },
+    { year: '2026', quarter: 'Q3', months: ['JUL'] },
   ];
 
   return (
@@ -12,7 +13,7 @@ export const TimelineHeader = () => {
         <div className="w-48 flex-shrink-0 border-r border-border" />
         <div className="flex-1 flex">
           {quarters.map((q, idx) => (
-            <div key={idx} className="flex-1">
+            <div key={idx} className={`flex-[${q.months.length}_0_0]`} style={{flex: `${q.months.length} 1 0%`}}>
               <div className="bg-primary text-primary-foreground text-center py-2 font-bold border-r border-background">
                 {q.year}
               </div>
