@@ -12,15 +12,15 @@ export const PhaseBar = ({ label, startPosition, endPosition, color = 'cyan' }: 
   
   return (
     <div 
-      className={`absolute top-1/2 -translate-y-1/2 h-8 ${bgColor} rounded flex items-center justify-center text-xs font-medium text-white shadow-sm`}
+      className={`absolute top-3/4 -translate-y-1/2 h-8 ${bgColor} rounded flex items-center justify-center text-xs font-medium text-white shadow-sm`}
       style={{ 
         left: `${startPosition}%`, 
         width: `${endPosition - startPosition}%` 
       }}
     >
-      <ArrowRight className="h-3 w-3 absolute -left-2" />
+      <ArrowRight className="h-3 w-3" />
       <span className="truncate px-2">{label}</span>
-      <ArrowRight className="h-3 w-3 absolute -right-2" />
+      <ArrowRight className="h-3 w-3" />
     </div>
   );
 };

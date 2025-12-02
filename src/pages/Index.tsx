@@ -35,6 +35,7 @@ const Index = () => {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  debugger;
 
   // Determine dynamic timeline range based on data
   const parsedDates = roadmapData
@@ -59,7 +60,7 @@ const Index = () => {
       const elapsed = date.getTime() - timelineStart.getTime();
       const position = (elapsed / totalDuration) * 100;
       
-      return Math.max(0, Math.min(100, position));
+      return Math.max(3, Math.min(97, position));
     } catch {
       return 50;
     }
@@ -96,6 +97,7 @@ const Index = () => {
 
   // Get milestones for a specific journey with vertical positioning to avoid overlaps
   const getMilestonesForJourney = (program: string, journey: string) => {
+    debugger;
     const milestones = roadmapData.filter(
       item => item.program === program && item.journey === journey
     );
@@ -107,7 +109,7 @@ const Index = () => {
     })).sort((a, b) => a.position - b.position);
 
     // Detect overlaps (within 5% of timeline = approximately same month)
-    const overlapThreshold = 5;
+    const overlapThreshold = 6;
     const milestonesWithOffset: Array<any> = [];
     
     for (let idx = 0; idx < milestonesWithPosition.length; idx++) {
@@ -130,9 +132,10 @@ const Index = () => {
 
   // Calculate row height based on max stacked milestones
   const getRowHeight = (program: string, journey: string) => {
+    debugger
     const milestones = getMilestonesForJourney(program, journey);
     const maxOffset = Math.max(0, ...milestones.map(m => m.verticalOffset || 0));
-    return Math.max(60, 60 + (maxOffset * 35));
+    return Math.max(100, 60 + (maxOffset * 35));
   };
 
   // Calculate build phase bar for tech drops (63 days before)
@@ -147,13 +150,13 @@ const Index = () => {
         const startDate = new Date(endDate);
         startDate.setDate(startDate.getDate() - 63); // 63 days before
         
-        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10));
+        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10)) - 3;
         const endPosition = m.position;
         
         return {
           id: `build-${idx}`,
           label: `Build Phase`,
-          startPosition,
+          startPosition ,
           endPosition
         };
       });
@@ -274,7 +277,7 @@ const Index = () => {
                           rowHeight={getRowHeight(programName, journey)}
                         >
                           {/* Render build phases first (in background) */}
-                          {buildPhases.map((phase) => (
+                          {/* {buildPhases.map((phase) => (
                             <PhaseBar
                               key={phase.id}
                               label={phase.label}
@@ -282,7 +285,7 @@ const Index = () => {
                               endPosition={phase.endPosition}
                               color="orange"
                             />
-                          ))}
+                          ))} */}
                           {/* Render milestones on top */}
                           {milestones.map((milestone, mIdx) => (
                             <MilestoneMarker

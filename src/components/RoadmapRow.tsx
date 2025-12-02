@@ -33,7 +33,7 @@ export const RoadmapRow = ({ id, journey, category, children, rowHeight = 60 }: 
       style={style}
       className="flex hover:bg-muted/30 transition-colors group"
     >
-      <div className="w-64 flex-shrink-0 border-r border-border p-3 flex items-center gap-2">
+      <div className="w-48 flex-shrink-0 border-r border-border p-3 flex items-center gap-2">
         <div 
           {...attributes} 
           {...listeners}
