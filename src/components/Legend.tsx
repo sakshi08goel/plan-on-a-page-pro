@@ -25,7 +25,14 @@ export const Legend = () => {
           <div className="h-3 w-8 bg-[hsl(var(--accent))] rounded flex items-center justify-center">
             <ArrowRight className="h-2 w-2 text-white" />
           </div>
-          <span>Build Phase (63 days)</span>
+          <span>Build Phase</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center w-8">
+            <div className="flex-1 border-t-2 border-dashed border-[hsl(var(--destructive))]" />
+            <ArrowRight className="h-3 w-3 text-[hsl(var(--destructive))] -ml-1" />
+          </div>
+          <span>Dependency Impact</span>
         </div>
       </div>
     </div>
