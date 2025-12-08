@@ -3,6 +3,7 @@ import { Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { getSprintsRequired } from "@/lib/sizeCalculator";
 
 export interface RoadmapData {
   program: string;
@@ -10,6 +11,7 @@ export interface RoadmapData {
   milestoneType: string;
   deliveryMilestone: string;
   plannedDeliveryDate: string;
+  sprintRequired: number;
 }
 
 interface FileUploadProps {
@@ -31,16 +33,13 @@ export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
           const workbook = XLSX.read(data);
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          debugger;
           const jsonData = XLSX.utils.sheet_to_json(worksheet, {
             raw: false,
           }) as any[];
 
           // Normalize date values from Excel (supports Date objects, strings, and Excel serial numbers)
           const normalizeDate = (value: any): string => {
-            debugger;
             const excelSerialToDate = (serial: number) => {
-              debugger;
               // Excel serial date: days since 1899-12-30
               const excelEpoch = Date.UTC(1899, 11, 30);
               const ms = excelEpoch + serial * 24 * 60 * 60 * 1000;
@@ -85,6 +84,7 @@ export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
                   row.PlannedEndDate ||
                   row.plannedEndDate
               ),
+              sprintRequired: getSprintsRequired(row["Tshirt Size"], "max") || row.sprintRequired || "",
             };
           });
 

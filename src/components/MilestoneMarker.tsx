@@ -1,49 +1,76 @@
-import { Star, Triangle, Circle } from 'lucide-react';
-
+import { Star, Triangle, Circle } from "lucide-react";
 interface MilestoneMarkerProps {
   type: string;
   label: string;
   position: number;
   verticalOffset?: number;
+  buildPhase?: {
+    id: string;
+    label: string;
+    startPosition: number;
+    endPosition: number;
+  };
 }
 
-export const MilestoneMarker = ({ type, label, position, verticalOffset = 0 }: MilestoneMarkerProps) => {
+export const MilestoneMarker = ({
+  type,
+  label,
+  position,
+  verticalOffset = 0,
+}: MilestoneMarkerProps) => {
   const getIcon = () => {
     const lowerType = type.toLowerCase();
-    
+
     // Customer Go Live -> Star
-    if (lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) {
-      return <Star className="h-4 w-4 fill-[hsl(var(--timeline-key))] text-[hsl(var(--timeline-key))]" />;
+    if (
+      lowerType.includes("customer") &&
+      lowerType.includes("go") &&
+      lowerType.includes("live")
+    ) {
+      return (
+        <Star className="h-4 w-4 fill-[hsl(var(--timeline-key))] text-[hsl(var(--timeline-key))]" />
+      );
     }
-    
+
     // Tech Drop -> Triangle
-    if (lowerType.includes('tech') && lowerType.includes('drop')) {
-      return <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />;
+    if (lowerType.includes("tech") && lowerType.includes("drop")) {
+      return (
+        <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />
+      );
     }
-    
+
     switch (lowerType) {
-      case 'key':
-      case 'star':
-        return <Star className="h-4 w-4 fill-[hsl(var(--timeline-key))] text-[hsl(var(--timeline-key))]" />;
-      case 'milestone':
-      case 'triangle':
-      case 'techdrop':
-        return <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />;
-      case 'checkpoint':
-      case 'circle':
-        return <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />;
+      case "key":
+      case "star":
+        return (
+          <Star className="h-4 w-4 fill-[hsl(var(--timeline-key))] text-[hsl(var(--timeline-key))]" />
+        );
+      case "milestone":
+      case "triangle":
+      case "techdrop":
+        return (
+          <Triangle className="h-4 w-4 fill-[hsl(var(--timeline-milestone))] text-[hsl(var(--timeline-milestone))]" />
+        );
+      case "checkpoint":
+      case "circle":
+        return (
+          <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
+        );
       default:
-        return <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />;
+        return (
+          <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
+        );
     }
   };
 
   return (
-    <div 
+    <div
       className="absolute flex flex-col items-center gap-1"
-      style={{ 
-        left: `${position}%`, 
-        top: `${0 + (verticalOffset * 35)}px`,
-        transform: 'translateX(-50%)'
+      style={{
+        left: `${position}%`,
+        // top: `${0 + verticalOffset * 42}px`,
+        top: verticalOffset ? `${verticalOffset * 50}px` : "",
+        transform: "translateX(-50%)",
       }}
     >
       {getIcon()}
