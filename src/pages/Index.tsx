@@ -53,7 +53,7 @@ const Index = () => {
     : new Date("2026-06-30"); // fallback
 
   // Calculate position on timeline (0-100%) based on date
-  const calculatePosition = (dateString: string) => {
+  const calculatePosition = (dateString: string, eventTpe: string) => {
     if (!dateString) return 50;
 
     try {
@@ -62,7 +62,9 @@ const Index = () => {
       const elapsed = date.getTime() - timelineStart.getTime();
       const position = (elapsed / totalDuration) * 100;
 
-      return Math.max(0, Math.min(97, position));
+      return eventTpe === "milestone"
+        ? Math.max(3, Math.min(97, position))
+        : Math.max(0, Math.min(97, position));
     } catch {
       return 50;
     }
@@ -115,7 +117,7 @@ const Index = () => {
     const milestonesWithPosition = milestones
       .map((m) => ({
         ...m,
-        position: calculatePosition(m.plannedDeliveryDate),
+        position: calculatePosition(m.plannedDeliveryDate, "milestone"),
       }))
       .sort((a, b) => a.position - b.position);
 
@@ -140,14 +142,17 @@ const Index = () => {
           );
         } else {
           // Also check for date overlaps based on sprint requirements
-          const startDate = calculateStartDate(milestone.plannedDeliveryDate, milestone.sprintRequired);
-          if(startDate <= new Date(prevMilestone.plannedDeliveryDate)) {
+          const startDate = calculateStartDate(
+            milestone.plannedDeliveryDate,
+            milestone.sprintRequired
+          );
+          if (startDate <= new Date(prevMilestone.plannedDeliveryDate)) {
             verticalOffset = Math.max(
               verticalOffset,
               prevMilestone.verticalOffset + 1
             );
           } else {
-            verticalOffset = prevMilestone.verticalOffset
+            verticalOffset = prevMilestone.verticalOffset;
           }
         }
       }
@@ -171,9 +176,9 @@ const Index = () => {
   const calculateStartDate = (endDateStr: string, sprintRequired: number) => {
     const endDate = new Date(endDateStr);
     const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - sprintRequired * 14); 
+    startDate.setDate(startDate.getDate() - sprintRequired * 14);
     return startDate;
-  }
+  };
 
   // Calculate build phase bar for tech drops (63 days before)
   const getBuildPhases = (milestones: any[]) => {
@@ -184,9 +189,15 @@ const Index = () => {
         //   return type.includes('tech') && type.includes('drop') || type === 'techdrop';
         // })
         .map((m, idx) => {
-          const startDate  = calculateStartDate(m.plannedDeliveryDate, m.sprintRequired )
+          const startDate = calculateStartDate(
+            m.plannedDeliveryDate,
+            m.sprintRequired
+          );
           const startPosition =
-            calculatePosition(startDate.toISOString().slice(0, 10));
+            calculatePosition(
+              startDate.toISOString().slice(0, 10),
+              "buildPhase"
+            );
           const endPosition = m.position;
 
           return {
