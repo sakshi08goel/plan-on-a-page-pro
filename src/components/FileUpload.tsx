@@ -12,6 +12,7 @@ export interface RoadmapData {
   deliveryMilestone: string;
   plannedDeliveryDate: string;
   sprintRequired: number;
+  impactOn?: string; // Feature impacted by critical dependency
 }
 
 interface FileUploadProps {
@@ -71,11 +72,15 @@ export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
           };
 
           const parsedData: RoadmapData[] = jsonData.map((row) => {
+            const milestoneType = row["Milestone Type"] || row.milestoneType || "";
+            const isCriticalDependency = milestoneType.toLowerCase().includes("critical") && 
+                                          milestoneType.toLowerCase().includes("depend");
+            
             return {
               program: row.Program || row.program || "",
               journey:
                 row.Feature || row.feature || row.Journey || row.journey || "",
-              milestoneType: row["Milestone Type"] || row.milestoneType || "",
+              milestoneType,
               deliveryMilestone:
                 row["Delivery Milestone"] || row.deliveryMilestone || "",
               plannedDeliveryDate: normalizeDate(
@@ -84,7 +89,9 @@ export const FileUpload = ({ onDataLoaded }: FileUploadProps) => {
                   row.PlannedEndDate ||
                   row.plannedEndDate
               ),
-              sprintRequired: getSprintsRequired(row["Tshirt Size"], "max") || row.sprintRequired || "",
+              // No sprint required for critical dependencies
+              sprintRequired: isCriticalDependency ? 0 : (getSprintsRequired(row["Tshirt Size"], "max") || row.sprintRequired || 0),
+              impactOn: row["Impact On"] || row.impactOn || "",
             };
           });
 

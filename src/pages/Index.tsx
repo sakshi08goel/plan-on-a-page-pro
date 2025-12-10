@@ -6,6 +6,7 @@ import { RoadmapRow } from "@/components/RoadmapRow";
 import { ProgramSection } from "@/components/ProgramSection";
 import { MilestoneMarker } from "@/components/MilestoneMarker";
 import { PhaseBar } from "@/components/PhaseBar";
+import { DependencyArrow } from "@/components/DependencyArrow";
 import { Legend } from "@/components/Legend";
 import { Download, Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -180,36 +181,55 @@ const Index = () => {
     return startDate;
   };
 
-  // Calculate build phase bar for tech drops (63 days before)
-  const getBuildPhases = (milestones: any[]) => {
-    return (
-      milestones
-        // .filter(m => {
-        //   const type = m.milestoneType.toLowerCase();
-        //   return type.includes('tech') && type.includes('drop') || type === 'techdrop';
-        // })
-        .map((m, idx) => {
-          const startDate = calculateStartDate(
-            m.plannedDeliveryDate,
-            m.sprintRequired
-          );
-          const startPosition =
-            calculatePosition(
-              startDate.toISOString().slice(0, 10),
-              "buildPhase"
-            );
-          const endPosition = m.position;
+  // Check if milestone is a critical dependency
+  const isCriticalDependency = (milestoneType: string) => {
+    const type = milestoneType.toLowerCase();
+    return type.includes('critical') && type.includes('depend');
+  };
 
-          return {
-            milestoneType: m.milestoneType,
-            verticalOffset: m.verticalOffset,
-            id: `build-${idx}`,
-            label: `Build Phase`,
-            startPosition,
-            endPosition,
-          };
-        })
-    );
+  // Calculate build phase bar for non-critical-dependency milestones
+  const getBuildPhases = (milestones: any[]) => {
+    return milestones
+      .filter(m => !isCriticalDependency(m.milestoneType))
+      .map((m, idx) => {
+        const startDate = calculateStartDate(m.plannedDeliveryDate, m.sprintRequired);
+        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10), "buildPhase");
+        const endPosition = m.position;
+
+        return {
+          milestoneType: m.milestoneType,
+          verticalOffset: m.verticalOffset,
+          id: `build-${idx}`,
+          label: `Build Phase`,
+          startPosition,
+          endPosition,
+        };
+      });
+  };
+
+  // Get dependency arrows for critical dependencies
+  const getDependencyArrows = (milestones: any[], program: string) => {
+    return milestones
+      .filter(m => isCriticalDependency(m.milestoneType) && m.impactOn)
+      .map((m, idx) => {
+        // Find the impacted milestone position
+        const impactedMilestone = roadmapData.find(
+          item => item.program === program && 
+                  (item.journey === m.impactOn || item.deliveryMilestone === m.impactOn)
+        );
+        
+        const endPosition = impactedMilestone 
+          ? calculatePosition(impactedMilestone.plannedDeliveryDate, "milestone")
+          : m.position + 10;
+
+        return {
+          id: `dependency-${idx}`,
+          label: `Impacts: ${m.impactOn}`,
+          startPosition: m.position,
+          endPosition,
+          verticalOffset: m.verticalOffset,
+        };
+      });
   };
 
   // const getBuildPhases = (milestones: any[]) => {
@@ -381,6 +401,7 @@ const Index = () => {
                         journey
                       );
                       const buildPhases = getBuildPhases(milestones);
+                      const dependencyArrows = getDependencyArrows(milestones, programName);
 
                       return (
                         <RoadmapRow
@@ -401,6 +422,16 @@ const Index = () => {
                               color="orange"
                             />
                           ))}
+                          {/* Render dependency arrows for critical dependencies */}
+                          {dependencyArrows.map((arrow) => (
+                            <DependencyArrow
+                              key={arrow.id}
+                              label={arrow.label}
+                              startPosition={arrow.startPosition}
+                              endPosition={arrow.endPosition}
+                              verticalOffset={arrow.verticalOffset}
+                            />
+                          ))}
                           {/* Render milestones on top */}
                           {milestones.map((milestone, mIdx) => (
                             <MilestoneMarker
@@ -409,7 +440,6 @@ const Index = () => {
                               label={milestone.deliveryMilestone}
                               position={milestone.position}
                               verticalOffset={milestone.verticalOffset}
-                              // buildPhase={milestone.buildPhase}
                             />
                           ))}
                         </RoadmapRow>

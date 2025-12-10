@@ -1,4 +1,4 @@
-import { Star, Triangle, Circle, ArrowRight } from 'lucide-react';
+import { Star, Triangle, Circle, ArrowRight, AlertTriangle } from 'lucide-react';
 
 export const Legend = () => {
   return (
@@ -21,7 +21,16 @@ export const Legend = () => {
           <div className="h-3 w-8 bg-[hsl(var(--accent))] rounded flex items-center justify-center">
             <ArrowRight className="h-2 w-2 text-white" />
           </div>
-          <span>Build Phase (63 days)</span>
+          <span>Build Phase</span>
+        </div>
+        <div className="flex items-center gap-2 col-span-2">
+          <AlertTriangle className="h-4 w-4 fill-[hsl(var(--destructive))] text-[hsl(var(--destructive))]" />
+          <div className="flex items-center w-12">
+            <div className="flex-1 border-t-2 border-dashed border-[hsl(var(--destructive))]" />
+            <ArrowRight className="h-3 w-3 text-[hsl(var(--destructive))] -ml-1" />
+          </div>
+          <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
+          <span>Critical Dependency Impact</span>
         </div>
       </div>
     </div>

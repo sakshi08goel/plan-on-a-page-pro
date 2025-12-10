@@ -1,4 +1,4 @@
-import { Star, Triangle, Circle } from "lucide-react";
+import { Star, Triangle, Circle, AlertTriangle } from "lucide-react";
 interface MilestoneMarkerProps {
   type: string;
   label: string;
@@ -39,6 +39,13 @@ export const MilestoneMarker = ({
       );
     }
 
+    // Critical Dependency -> AlertTriangle
+    if (lowerType.includes("critical") && lowerType.includes("depend")) {
+      return (
+        <AlertTriangle className="h-4 w-4 fill-[hsl(var(--destructive))] text-[hsl(var(--destructive))]" />
+      );
+    }
+
     switch (lowerType) {
       case "key":
       case "star":
@@ -55,6 +62,11 @@ export const MilestoneMarker = ({
       case "circle":
         return (
           <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
+        );
+      case "critical":
+      case "criticaldependency":
+        return (
+          <AlertTriangle className="h-4 w-4 fill-[hsl(var(--destructive))] text-[hsl(var(--destructive))]" />
         );
       default:
         return (
