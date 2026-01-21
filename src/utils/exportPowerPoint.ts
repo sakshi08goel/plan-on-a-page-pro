@@ -19,7 +19,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     : new Date('2026-06-30');
 
   // Calculate position on timeline (0-100%)
-  const calculatePosition = (dateString: string) => {
+  const calculatePosition = (dateString: string, eventTpe: string) => {
     if (!dateString) return 50;
     
     try {
@@ -28,7 +28,9 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
       const elapsed = date.getTime() - timelineStart.getTime();
       const position = (elapsed / totalDuration) * 100;
       
-      return Math.max(0, Math.min(100, position));
+      return eventTpe === "milestone"
+        ? Math.max(3, Math.min(97, position))
+        : Math.max(0, Math.min(97, position));
     } catch {
       return 50;
     }
@@ -63,7 +65,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   const legendY = 0.6;
   const legendStartX = 0.5;
   
-  slide.addShape(pptx.ShapeType.rect, {
+  slide.addShape(pptx.ShapeType.star6, {
     x: legendStartX,
     y: legendY,
     w: 0.12,
@@ -80,7 +82,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     valign: 'middle'
   });
 
-  slide.addShape(pptx.ShapeType.rect, {
+  slide.addShape(pptx.ShapeType.triangle, {
     x: legendStartX + 1.3,
     y: legendY,
     w: 0.12,
@@ -97,7 +99,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     valign: 'middle'
   });
 
-  slide.addShape(pptx.ShapeType.rect, {
+  slide.addShape(pptx.ShapeType.ellipse, {
     x: legendStartX + 2.4,
     y: legendY,
     w: 0.12,
@@ -114,7 +116,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     valign: 'middle'
   });
 
-  slide.addShape(pptx.ShapeType.rect, {
+  slide.addShape(pptx.ShapeType.rightArrow, {
     x: legendStartX + 3.6,
     y: legendY,
     w: 0.12,
@@ -238,7 +240,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
       // Process milestones first to calculate required height
       const processedMilestones = milestones.map(m => ({
         ...m,
-        position: calculatePosition(m.plannedDeliveryDate)
+        position: calculatePosition(m.plannedDeliveryDate, "milestone")
       })).sort((a, b) => a.position - b.position);
 
       // Assign vertical offsets with better spacing
@@ -297,22 +299,22 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
       // Draw build phases (at bottom to avoid milestone overlap)
       milestonesWithOffset
-        .filter(m => {
-          const type = m.milestoneType.toLowerCase();
-          return (type.includes('tech') && type.includes('drop')) || type === 'techdrop';
-        })
+        // .filter(m => {
+        //   const type = m.milestoneType.toLowerCase();
+        //   return (type.includes('tech') && type.includes('drop')) || type === 'techdrop';
+        // })
         .forEach(m => {
           const endDate = new Date(m.plannedDeliveryDate);
           const startDate = new Date(endDate);
           startDate.setDate(startDate.getDate() - 63);
           
-          const startPosition = calculatePosition(startDate.toISOString().slice(0, 10));
+          const startPosition = calculatePosition(startDate.toISOString().slice(0, 10), "buildPhase");
           const endPosition = m.position;
           
           const barX = timelineX + (startPosition / 100 * timelineWidth);
           const barWidth = ((endPosition - startPosition) / 100 * timelineWidth);
           
-          slide.addShape(pptx.ShapeType.rect, {
+          slide.addShape(pptx.ShapeType.rightArrow, {
             x: barX,
             y: currentY + rowHeight - 0.1,
             w: barWidth,
@@ -331,19 +333,13 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         let size = 0.1;
         
         const lowerType = milestone.milestoneType.toLowerCase();
+        debugger
         
         if ((lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) || 
             lowerType === 'key' || lowerType === 'star') {
           color = '9933CC'; // purple star
           size = 0.12;
-        } else if ((lowerType.includes('tech') && lowerType.includes('drop')) || 
-                   lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop') {
-          color = '0266A6'; // dark blue triangle
-          size = 0.11;
-        }
-        
-        // Draw milestone marker
-        slide.addShape(pptx.ShapeType.rect, {
+          slide.addShape(pptx.ShapeType.star6, {
           x: milestoneX - (size / 2),
           y: milestoneY,
           w: size,
@@ -351,6 +347,31 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           fill: { color: color },
           line: { color: color, width: 1 }
         });
+        } else if ((lowerType.includes('tech') && lowerType.includes('drop')) || 
+                   lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop') {
+          color = '0266A6'; // dark blue triangle
+          size = 0.11;
+          slide.addShape(pptx.ShapeType.triangle, {
+          x: milestoneX - (size / 2),
+          y: milestoneY,
+          w: size,
+          h: size,
+          fill: { color: color },
+          line: { color: color, width: 1 }
+        });
+        } else {
+        // Draw milestone marker
+        slide.addShape(pptx.ShapeType.ellipse, {
+          x: milestoneX - (size / 2),
+          y: milestoneY,
+          w: size,
+          h: size,
+          fill: { color: color },
+          line: { color: color, width: 1 }
+        });
+        }
+        
+        
         
         // Add milestone label with better spacing
         const labelText = milestone.deliveryMilestone.length > 30 
