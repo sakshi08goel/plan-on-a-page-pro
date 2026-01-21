@@ -61,7 +61,7 @@ export const MilestoneMarker = ({
       case "checkpoint":
       case "circle":
         return (
-          <Circle className="h-3 w-3 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
+          <Circle className="h-4 w-4 fill-[hsl(var(--timeline-checkpoint))] text-[hsl(var(--timeline-checkpoint))]" />
         );
       case "critical":
       case "criticaldependency":
