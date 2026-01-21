@@ -418,7 +418,6 @@ const Index = () => {
                               startPosition={phase.startPosition}
                               endPosition={phase.endPosition}
                               verticalOffset={phase.verticalOffset}
-                              rowHeight={getRowHeight(programName, journey)}
                               color="orange"
                             />
                           ))}
