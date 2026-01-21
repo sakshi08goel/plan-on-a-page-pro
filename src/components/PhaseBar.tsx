@@ -6,7 +6,6 @@ interface PhaseBarProps {
   endPosition: number;
   verticalOffset?: number;
   color?: "cyan" | "orange";
-  rowHeight?: number;
 }
 
 export const PhaseBar = ({
