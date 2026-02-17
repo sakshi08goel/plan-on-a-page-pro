@@ -4,8 +4,8 @@ import { RoadmapData } from '@/components/FileUpload';
 export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   const pptx = new pptxgen();
   pptx.layout = 'LAYOUT_WIDE';
-  
-  // Determine timeline range
+
+  // ─── Timeline range ──────────────────────────────────────────────────────────
   const parsedDates = roadmapData
     .map(d => new Date(d.plannedDeliveryDate))
     .filter(d => !isNaN(d.getTime()));
@@ -18,420 +18,372 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     ? new Date(Math.max(...parsedDates.map(d => d.getTime())))
     : new Date('2026-06-30');
 
-  // Calculate position on timeline (0-100%)
-  const calculatePosition = (dateString: string, eventTpe: string) => {
-    if (!dateString) return 50;
-    
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  /** Returns 0–100 (%) position on the timeline */
+  const pct = (dateStr: string) => {
+    if (!dateStr) return 50;
     try {
-      const date = new Date(dateString);
-      const totalDuration = timelineEnd.getTime() - timelineStart.getTime();
-      const elapsed = date.getTime() - timelineStart.getTime();
-      const position = (elapsed / totalDuration) * 100;
-      
-      return eventTpe === "milestone"
-        ? Math.max(3, Math.min(97, position))
-        : Math.max(0, Math.min(97, position));
+      const d     = new Date(dateStr);
+      const total = timelineEnd.getTime() - timelineStart.getTime();
+      const elapsed = d.getTime() - timelineStart.getTime();
+      return Math.max(0, Math.min(100, (elapsed / total) * 100));
     } catch {
       return 50;
     }
   };
 
-  // Group data by program
+  // ─── Layout constants ─────────────────────────────────────────────────────────
+  const SLIDE_W       = 13.33;
+  const SLIDE_H       = 7.5;
+  const timelineX     = 1.85;
+  const timelineWidth = 11.1;
+  const timelineEndX  = timelineX + timelineWidth;   // hard right boundary
+  const labelX        = 0.3;
+  const labelWidth    = 1.5;
+
+  const toX = (p: number) => timelineX + (p / 100) * timelineWidth;
+
+  // Sizes
+  const ICON_SIZE  = 0.14;
+  const BAR_H      = 0.17;
+  const TEXT_H     = 0.28;
+  const TEXT_W     = 0.85;
+  const BASE_ROW_H = 0.72;
+  const STACK_STEP = 0.30;
+  const OVERLAP_PCT = 7;
+  const HEADER_H   = 0.28;
+  const PROG_H     = 0.30;
+
+  // ─── Group data ───────────────────────────────────────────────────────────────
   const groupedData = roadmapData.reduce((acc, item) => {
-    if (!acc[item.program]) {
-      acc[item.program] = [];
-    }
+    if (!acc[item.program]) acc[item.program] = [];
     acc[item.program].push(item);
     return acc;
   }, {} as Record<string, RoadmapData[]>);
 
-  // SINGLE SLIDE with ALL programs
-  const slide = pptx.addSlide();
-  slide.background = { color: 'FFFFFF' };
-  
-  // Title
-  slide.addText('2025 Deliveries - Plan on a Page', {
-    x: 0.3,
-    y: 0.15,
-    w: 12.7,
-    h: 0.4,
-    fontSize: 24,
-    bold: true,
-    color: '1a1a1a',
-    align: 'center'
-  });
-
-  // Legend
-  const legendY = 0.6;
-  const legendStartX = 0.5;
-  
-  slide.addShape(pptx.ShapeType.star6, {
-    x: legendStartX,
-    y: legendY,
-    w: 0.12,
-    h: 0.12,
-    fill: { color: '9933CC' }
-  });
-  slide.addText('Key Milestone', {
-    x: legendStartX + 0.15,
-    y: legendY,
-    w: 1,
-    h: 0.12,
-    fontSize: 8,
-    color: '1a1a1a',
-    valign: 'middle'
-  });
-
-  slide.addShape(pptx.ShapeType.triangle, {
-    x: legendStartX + 1.3,
-    y: legendY,
-    w: 0.12,
-    h: 0.12,
-    fill: { color: '0266A6' }
-  });
-  slide.addText('Tech Drop', {
-    x: legendStartX + 1.45,
-    y: legendY,
-    w: 0.8,
-    h: 0.12,
-    fontSize: 8,
-    color: '1a1a1a',
-    valign: 'middle'
-  });
-
-  slide.addShape(pptx.ShapeType.ellipse, {
-    x: legendStartX + 2.4,
-    y: legendY,
-    w: 0.12,
-    h: 0.12,
-    fill: { color: '28A745' }
-  });
-  slide.addText('Checkpoint', {
-    x: legendStartX + 2.55,
-    y: legendY,
-    w: 0.9,
-    h: 0.12,
-    fontSize: 8,
-    color: '1a1a1a',
-    valign: 'middle'
-  });
-
-  slide.addShape(pptx.ShapeType.rightArrow, {
-    x: legendStartX + 3.6,
-    y: legendY,
-    w: 0.12,
-    h: 0.12,
-    fill: { color: 'FF8800' }
-  });
-  slide.addText('Build Phase', {
-    x: legendStartX + 3.75,
-    y: legendY,
-    w: 0.9,
-    h: 0.12,
-    fontSize: 8,
-    color: '1a1a1a',
-    valign: 'middle'
-  });
-
-  // Timeline configuration
-  const timelineY = 0.85;
-  const timelineWidth = 11.2;
-  const timelineX = 1.8;
-  const labelWidth = 1.5;
-
-  // Generate quarters
-  const quarters: Array<{ label: string; startDate: Date; endDate: Date }> = [];
-  const currentQuarter = new Date(timelineStart);
-  currentQuarter.setMonth(Math.floor(currentQuarter.getMonth() / 3) * 3, 1);
-  
-  while (currentQuarter <= timelineEnd) {
-    const quarterStart = new Date(currentQuarter);
-    const quarterEnd = new Date(currentQuarter);
-    quarterEnd.setMonth(quarterEnd.getMonth() + 3, 0);
-    
-    const q = Math.floor(quarterStart.getMonth() / 3) + 1;
-    const year = quarterStart.getFullYear();
-    
-    quarters.push({
-      label: `Q${q} ${year}`,
-      startDate: quarterStart,
-      endDate: quarterEnd
-    });
-    
-    currentQuarter.setMonth(currentQuarter.getMonth() + 3);
+  // ─── Generate quarters ────────────────────────────────────────────────────────
+  const quarters: string[] = [];
+  const cur = new Date(timelineStart);
+  cur.setMonth(Math.floor(cur.getMonth() / 3) * 3, 1);
+  while (cur <= timelineEnd) {
+    quarters.push(`Q${Math.floor(cur.getMonth() / 3) + 1} ${cur.getFullYear()}`);
+    cur.setMonth(cur.getMonth() + 3);
   }
 
-  // Draw quarter headers
-  quarters.forEach((quarter, idx) => {
-    const qWidth = timelineWidth / quarters.length;
-    const qX = timelineX + (idx * qWidth);
-    
-    slide.addShape(pptx.ShapeType.rect, {
-      x: qX,
-      y: timelineY,
-      w: qWidth,
-      h: 0.3,
-      fill: { color: 'E8E8E8' },
-      line: { color: 'CCCCCC', width: 1 }
+  // ─── Row height calculator ────────────────────────────────────────────────────
+  const getRowHeight = (milestones: RoadmapData[]) => {
+    const positions = milestones.map(m => pct(m.plannedDeliveryDate)).sort((a, b) => a - b);
+    let maxOffset = 0;
+    const offsets: number[] = [];
+    for (let i = 0; i < positions.length; i++) {
+      let offset = 0;
+      for (let j = 0; j < i; j++) {
+        if (Math.abs(positions[i] - positions[j]) < OVERLAP_PCT) {
+          offset = Math.max(offset, offsets[j] + 1);
+        }
+      }
+      offsets.push(offset);
+      maxOffset = Math.max(maxOffset, offset);
+    }
+    return Math.max(BASE_ROW_H, BASE_ROW_H + maxOffset * STACK_STEP);
+  };
+
+  // ─── Slide management ────────────────────────────────────────────────────────
+  let slide  = pptx.addSlide();
+  slide.background = { color: 'FFFFFF' };
+
+  const addQuarterHeaders = (s: pptxgen.Slide, y: number) => {
+    // Left blank cell
+    s.addShape(pptx.ShapeType.rect, {
+      x: labelX, y, w: labelWidth, h: HEADER_H,
+      fill: { color: 'FFFFFF' }, line: { color: 'FFFFFF', width: 0 },
     });
-    
-    slide.addText(quarter.label, {
-      x: qX,
-      y: timelineY,
-      w: qWidth,
-      h: 0.3,
-      fontSize: 9,
-      bold: true,
-      color: '1a1a1a',
-      align: 'center',
-      valign: 'middle'
+    const qW = timelineWidth / quarters.length;
+    quarters.forEach((label, i) => {
+      const qX = timelineX + i * qW;
+      s.addShape(pptx.ShapeType.rect, {
+        x: qX, y, w: qW, h: HEADER_H,
+        fill: { color: '1B3A6B' }, line: { color: '2A5298', width: 1 },
+      });
+      s.addText(label, {
+        x: qX, y, w: qW, h: HEADER_H,
+        fontSize: 9, bold: true, color: 'FFFFFF', align: 'center', valign: 'middle',
+      });
     });
+  };
+
+  // Title
+  slide.addText('2025 Deliveries - Plan on a Page', {
+    x: labelX, y: 0.08, w: SLIDE_W - 0.6, h: 0.36,
+    fontSize: 20, bold: true, color: '1a1a1a', align: 'center',
   });
 
-  // Draw all programs
-  let currentY = timelineY + 0.35;
-  const baseRowHeight = 0.75;          // FIX 1: increased from 0.55 → 0.75 to give room for icon + text
-  const milestoneVerticalSpacing = 0.25; // FIX 2: increased from 0.2 → 0.25 for better stacking
-
-  Object.entries(groupedData).forEach(([programName, items]) => {
-    // Program header row
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 0.3,
-      y: currentY,
-      w: labelWidth,
-      h: 0.3,
-      fill: { color: '0266A6' },
-      line: { color: 'CCCCCC', width: 1 }
-    });
-    
-    slide.addText(programName, {
-      x: 0.35,
-      y: currentY,
-      w: labelWidth - 0.1,
-      h: 0.3,
-      fontSize: 10,
-      bold: true,
-      color: 'FFFFFF',
-      valign: 'middle'
-    });
-
-    slide.addShape(pptx.ShapeType.rect, {
-      x: timelineX,
-      y: currentY,
-      w: timelineWidth,
-      h: 0.3,
-      fill: { color: 'D6EAF8' },
-      line: { color: 'CCCCCC', width: 1 }
-    });
-
-    currentY += 0.32;
-
-    // Group by journey
-    const journeyGroups = items.reduce((acc, item) => {
-      if (!acc[item.journey]) {
-        acc[item.journey] = [];
+  // ── Legend ────────────────────────────────────────────────────────────────────
+  const LY = 0.47;
+  const addLegendItem = (
+    s: pptxgen.Slide,
+    lx: number,
+    shape: keyof typeof pptx.ShapeType | null,
+    color: string,
+    label: string,
+    isBuildBar = false,
+    isDash = false
+  ) => {
+    if (isBuildBar) {
+      s.addShape(pptx.ShapeType.roundRect, {
+        x: lx, y: LY + 0.01, w: 0.65, h: 0.13,
+        fill: { color: 'FF8800' }, line: { color: 'FF8800', width: 0 }, rectRadius: 0.03,
+      });
+      s.addText('→ Build Phase →', {
+        x: lx, y: LY + 0.01, w: 0.65, h: 0.13,
+        fontSize: 5.5, color: 'FFFFFF', bold: true, align: 'center', valign: 'middle',
+      });
+    } else if (isDash) {
+      // Red dashed line with arrowhead
+      s.addShape(pptx.ShapeType.triangle, {
+        x: lx, y: LY + 0.02, w: 0.09, h: 0.09,
+        fill: { color: 'FF3333' }, line: { color: 'FF3333', width: 0 },
+      });
+      for (let seg = 0; seg < 3; seg++) {
+        s.addShape(pptx.ShapeType.line, {
+          x: lx + 0.11 + seg * 0.09, y: LY + 0.065, w: 0.06, h: 0,
+          line: { color: 'FF3333', width: 1.5 },
+        });
       }
+      s.addShape(pptx.ShapeType.rightArrow, {
+        x: lx + 0.39, y: LY + 0.02, w: 0.09, h: 0.09,
+        fill: { color: 'FF3333' }, line: { color: 'FF3333', width: 0 },
+      });
+    } else if (shape) {
+      s.addShape(pptx.ShapeType[shape] as any, {
+        x: lx, y: LY + 0.01, w: 0.12, h: 0.12,
+        fill: { color }, line: { color, width: 0 },
+      });
+    }
+    const textOffset = isBuildBar ? 0.68 : isDash ? 0.52 : 0.15;
+    s.addText(label, {
+      x: lx + textOffset, y: LY, w: 1.2, h: 0.14,
+      fontSize: 7, color: '333333', valign: 'middle',
+    });
+  };
+
+  addLegendItem(slide, 0.4,   'star6',    '9933CC', 'Customer Go Live');
+  addLegendItem(slide, 1.95,  'triangle', '0266A6', 'Tech Drop');
+  addLegendItem(slide, 3.2,   'ellipse',  '28A745', 'Checkpoint');
+  addLegendItem(slide, 4.45,  null,       'FF8800', 'Build Phase', true);
+  addLegendItem(slide, 6.0,   null,       'FF3333', 'Critical Dependency', false, true);
+
+  // Quarter headers
+  const quarterY = 0.62;
+  addQuarterHeaders(slide, quarterY);
+
+  let currentY = quarterY + HEADER_H + 0.05;
+  const maxY   = SLIDE_H - 0.32;
+
+  const ensureSpace = (needed: number) => {
+    if (currentY + needed > maxY) {
+      slide = pptx.addSlide();
+      slide.background = { color: 'FFFFFF' };
+      addQuarterHeaders(slide, 0.08);
+      currentY = 0.08 + HEADER_H + 0.05;
+    }
+  };
+
+  // ─── Draw programs ────────────────────────────────────────────────────────────
+  Object.entries(groupedData).forEach(([programName, items]) => {
+    ensureSpace(PROG_H + 0.08);
+
+    // Program header — full width dark blue band
+    slide.addShape(pptx.ShapeType.rect, {
+      x: labelX, y: currentY, w: SLIDE_W - 0.6, h: PROG_H,
+      fill: { color: '1B4F8C' }, line: { color: '1B4F8C', width: 0 },
+    });
+    slide.addText(programName, {
+      x: labelX + 0.12, y: currentY, w: SLIDE_W - 0.85, h: PROG_H,
+      fontSize: 11, bold: true, color: 'FFFFFF', valign: 'middle',
+    });
+    currentY += PROG_H + 0.04;
+
+    // ── Journey rows ────────────────────────────────────────────────────────────
+    const journeyGroups = items.reduce((acc, item) => {
+      if (!acc[item.journey]) acc[item.journey] = [];
       acc[item.journey].push(item);
       return acc;
     }, {} as Record<string, RoadmapData[]>);
 
-    // Draw each journey
     Object.entries(journeyGroups).forEach(([journey, milestones]) => {
-      // Process milestones first to calculate required height
-      const processedMilestones = milestones.map(m => ({
-        ...m,
-        position: calculatePosition(m.plannedDeliveryDate, "milestone")
-      })).sort((a, b) => a.position - b.position);
+      const rowH = getRowHeight(milestones);
+      ensureSpace(rowH + 0.04);
 
-      // Assign vertical offsets with better spacing
-      const milestonesWithOffset: Array<any> = [];
-      const overlapThreshold = 8;
-      
-      for (let idx = 0; idx < processedMilestones.length; idx++) {
-        const milestone = processedMilestones[idx];
-        let verticalOffset = 0;
-        
-        for (let i = 0; i < idx; i++) {
-          const prevMilestone = milestonesWithOffset[i];
-          if (Math.abs(milestone.position - prevMilestone.position) < overlapThreshold) {
-            verticalOffset = Math.max(verticalOffset, prevMilestone.verticalOffset + 1);
+      // Journey label cell
+      slide.addShape(pptx.ShapeType.rect, {
+        x: labelX, y: currentY, w: labelWidth, h: rowH,
+        fill: { color: 'EEF4FA' }, line: { color: 'C8D8E8', width: 1 },
+      });
+      slide.addText(journey, {
+        x: labelX + 0.07, y: currentY, w: labelWidth - 0.14, h: rowH,
+        fontSize: 8, color: '222222', valign: 'middle', wrap: true,
+      });
+
+      // Swimlane
+      slide.addShape(pptx.ShapeType.rect, {
+        x: timelineX, y: currentY, w: timelineWidth, h: rowH,
+        fill: { color: 'B3F0FF' }, line: { color: 'C8D8E8', width: 1 },
+      });
+
+      // Stacking offsets
+      const sorted = milestones
+        .map(m => ({ ...m, pos: pct(m.plannedDeliveryDate) }))
+        .sort((a, b) => a.pos - b.pos);
+
+      const withOffset: Array<typeof sorted[0] & { vOffset: number }> = [];
+      for (let i = 0; i < sorted.length; i++) {
+        let vo = 0;
+        for (let j = 0; j < i; j++) {
+          if (Math.abs(sorted[i].pos - withOffset[j].pos) < OVERLAP_PCT) {
+            vo = Math.max(vo, withOffset[j].vOffset + 1);
           }
         }
-        
-        milestonesWithOffset.push({ ...milestone, verticalOffset });
+        withOffset.push({ ...sorted[i], vOffset: vo });
       }
 
-      // Calculate dynamic row height based on max vertical offset
-      const maxOffset = milestonesWithOffset.length > 0 
-        ? Math.max(...milestonesWithOffset.map(m => m.verticalOffset))
-        : 0;
-      const rowHeight = Math.max(baseRowHeight, baseRowHeight + (maxOffset * milestoneVerticalSpacing));
+      // Draw each milestone
+      withOffset.forEach(m => {
+        const mX        = toX(m.pos);
+        const vOff      = m.vOffset * STACK_STEP;
+        const iconY     = currentY + 0.07 + vOff;
+        const textY     = iconY + ICON_SIZE + 0.04;
+        const lowerType = m.milestoneType.toLowerCase();
+        const isCritical = lowerType.includes('critical') || lowerType.includes('dependan');
 
-      // Journey label
-      slide.addShape(pptx.ShapeType.rect, {
-        x: 0.3,
-        y: currentY,
-        w: labelWidth,
-        h: rowHeight,
-        fill: { color: 'F8F8F8' },
-        line: { color: 'CCCCCC', width: 1 }
-      });
-      
-      slide.addText(journey, {
-        x: 0.35,
-        y: currentY,
-        w: labelWidth - 0.1,
-        h: rowHeight,
-        fontSize: 8,
-        color: '1a1a1a',
-        valign: 'middle'
-      });
+        // ── BUILD PHASE BAR ─────────────────────────────────────────────────────
+        // Starts 63 days before delivery date, ends exactly at milestone X
+        const buildEndDate   = new Date(m.plannedDeliveryDate);
+        const buildStartDate = new Date(buildEndDate);
+        buildStartDate.setDate(buildStartDate.getDate() - 63);
 
-      // Swimlane background - light cyan
-      slide.addShape(pptx.ShapeType.rect, {
-        x: timelineX,
-        y: currentY,
-        w: timelineWidth,
-        h: rowHeight,
-        fill: { color: 'B3F5FF' },
-        line: { color: 'CCCCCC', width: 1 }
-      });
+        const barStartX = Math.max(timelineX, toX(pct(buildStartDate.toISOString().slice(0, 10))));
+        // FIX: bar must end AT the milestone icon centre, clamped to timeline boundary
+        const barEndX   = Math.min(timelineEndX, mX);
+        const barW      = barEndX - barStartX;
+        const barY      = iconY + ICON_SIZE / 2 - BAR_H / 2;
 
-      // Draw build phases
-      milestonesWithOffset.forEach(m => {
-        const endDate = new Date(m.plannedDeliveryDate);
-        const startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 63);
-        
-        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10), "buildPhase");
-        const endPosition = m.position;
-        
-        const barX = timelineX + (startPosition / 100 * timelineWidth);
-        const barWidth = ((endPosition - startPosition) / 100 * timelineWidth);
-        
-        slide.addShape(pptx.ShapeType.rightArrow, {
-          x: barX,
-          y: currentY + rowHeight - 0.1,
-          w: barWidth,
-          h: 0.08,
-          fill: { color: 'FF8800' }
-        });
-      });
+        if (barW > 0.05) {
+          // Orange rounded rectangle (matching UI exactly)
+          slide.addShape(pptx.ShapeType.roundRect, {
+            x: barStartX, y: barY, w: barW, h: BAR_H,
+            fill: { color: 'FF8800' },
+            line: { color: 'FF8800', width: 0 },
+            rectRadius: 0.04,
+          });
+          // "→ Build Phase →" label inside bar when wide enough
+          if (barW > 0.55) {
+            slide.addText('→  Build Phase  →', {
+              x: barStartX + 0.03, y: barY, w: barW - 0.06, h: BAR_H,
+              fontSize: 6, color: 'FFFFFF', bold: true, align: 'center', valign: 'middle',
+            });
+          }
+        }
 
-      // Draw milestones
-      milestonesWithOffset.forEach(milestone => {
-        const milestoneX = timelineX + (milestone.position / 100 * timelineWidth);
-        const offsetY = milestone.verticalOffset * milestoneVerticalSpacing;
+        // ── CRITICAL DEPENDENCY dashed red line ─────────────────────────────────
+        if (isCritical) {
+          const impactTarget = roadmapData.find(
+            r => r.deliveryMilestone === (m as any).impactOn || r.journey === (m as any).impactOn
+          );
+          const targetPct  = impactTarget ? pct(impactTarget.plannedDeliveryDate) : Math.min(m.pos + 18, 96);
+          const lineStartX = mX + ICON_SIZE / 2 + 0.02;
+          const lineEndX   = Math.min(timelineEndX - 0.12, toX(targetPct) - ICON_SIZE / 2);
+          const lineY      = iconY + ICON_SIZE / 2;
 
-        // ─────────────────────────────────────────────────────────────────
-        // FIX 3: The core overlap fix.
-        //
-        // OLD (broken) code placed both the icon AND the text at the same
-        // Y coordinate (milestoneY), so the shape drew directly on top of
-        // the label:
-        //
-        //   const milestoneY = currentY + 0.1 + offsetY;
-        //   slide.addShape(..., { y: milestoneY, h: size });   ← icon here
-        //   slide.addText(...,  { y: milestoneY + size + 0.02 }); ← text overlaps
-        //
-        // With small `size` values (0.10–0.12") and a text box height of
-        // only 0.16", the text box was not tall enough and sat underneath
-        // the icon at nearly the same pixel position.
-        //
-        // FIX: use separate, clearly spaced Y values:
-        //   iconY  = top of the icon shape
-        //   textY  = iconY + icon height + a visible gap (0.05")
-        //   textH  = 0.28" (tall enough to wrap 2 short lines at 7 pt)
-        // ─────────────────────────────────────────────────────────────────
+          if (lineEndX > lineStartX + 0.15) {
+            // Dashed segments (tiled because pptxgenjs dashType isn't reliable)
+            const SEG = 0.09, GAP = 0.05;
+            let sx = lineStartX;
+            while (sx + SEG < lineEndX - 0.12) {
+              slide.addShape(pptx.ShapeType.line, {
+                x: sx, y: lineY, w: SEG, h: 0,
+                line: { color: 'FF3333', width: 2 },
+              });
+              sx += SEG + GAP;
+            }
+            // Arrow tip
+            slide.addShape(pptx.ShapeType.triangle, {
+              x: lineEndX - 0.09, y: lineY - 0.045,
+              w: 0.09, h: 0.09,
+              fill: { color: 'FF3333' }, line: { color: 'FF3333', width: 0 },
+              rotate: 90,
+            });
+          }
+        }
 
-        const lowerType = milestone.milestoneType.toLowerCase();
-
-        let color = '28A745';
-        let size  = 0.13;    // unified icon size for all types
-
-        const iconY  = currentY + 0.06 + offsetY;  // icon top
-        const textY  = iconY + size + 0.05;         // text starts BELOW icon + gap
-        const textW  = 0.80;
-        const textH  = 0.28;                        // tall enough for 2-line wrap
-        const textX  = milestoneX - textW / 2;      // centred under icon
+        // ── MILESTONE ICON ──────────────────────────────────────────────────────
+        const iconX = mX - ICON_SIZE / 2;
 
         if (
           (lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) ||
           lowerType === 'key' || lowerType === 'star'
         ) {
-          color = '9933CC'; // purple star
           slide.addShape(pptx.ShapeType.star6, {
-            x: milestoneX - size / 2,
-            y: iconY,                 // ← icon at iconY
-            w: size,
-            h: size,
-            fill: { color },
-            line: { color, width: 1 }
+            x: iconX, y: iconY, w: ICON_SIZE, h: ICON_SIZE,
+            fill: { color: '9933CC' }, line: { color: '9933CC', width: 0 },
           });
-
         } else if (
           (lowerType.includes('tech') && lowerType.includes('drop')) ||
           lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop'
         ) {
-          color = '0266A6'; // dark blue triangle
           slide.addShape(pptx.ShapeType.triangle, {
-            x: milestoneX - size / 2,
-            y: iconY,                 // ← icon at iconY
-            w: size,
-            h: size,
-            fill: { color },
-            line: { color, width: 1 }
+            x: iconX, y: iconY, w: ICON_SIZE, h: ICON_SIZE,
+            fill: { color: '0266A6' }, line: { color: '0266A6', width: 0 },
           });
-
+        } else if (isCritical) {
+          slide.addShape(pptx.ShapeType.triangle, {
+            x: iconX, y: iconY, w: ICON_SIZE, h: ICON_SIZE,
+            fill: { color: 'FF3333' }, line: { color: 'FF3333', width: 0 },
+          });
         } else {
-          // Checkpoint / Critical Dependency — green ellipse
+          // Checkpoint / green circle
           slide.addShape(pptx.ShapeType.ellipse, {
-            x: milestoneX - size / 2,
-            y: iconY,                 // ← icon at iconY
-            w: size,
-            h: size,
-            fill: { color },
-            line: { color, width: 1 }
+            x: iconX, y: iconY, w: ICON_SIZE, h: ICON_SIZE,
+            fill: { color: '28A745' }, line: { color: '28A745', width: 0 },
           });
         }
 
-        // Text label — now sits BELOW the icon, not on top of it
-        const labelText = milestone.deliveryMilestone.length > 30
-          ? milestone.deliveryMilestone.substring(0, 28) + '…'
-          : milestone.deliveryMilestone;
+        // ── TEXT LABEL (below icon, clamped inside slide) ────────────────────
+        const label = m.deliveryMilestone.length > 32
+          ? m.deliveryMilestone.substring(0, 30) + '…'
+          : m.deliveryMilestone;
 
-        slide.addText(labelText, {
-          x: textX,
-          y: textY,    // ← text at textY (= iconY + size + gap)
-          w: textW,
-          h: textH,
-          fontSize: 6.5,
-          color: '1a1a1a',
-          align: 'center',
-          valign: 'top',
-          wrap: true,  // FIX 4: allow wrapping so long names don't overflow
+        // Clamp text box so it never goes past the right edge
+        const rawTextX   = mX - TEXT_W / 2;
+        const clampedTX  = Math.max(
+          timelineX + 0.02,
+          Math.min(rawTextX, timelineEndX - TEXT_W - 0.02)
+        );
+
+        slide.addText(label, {
+          x: clampedTX, y: textY, w: TEXT_W, h: TEXT_H,
+          fontSize: 6.5, color: '1a1a1a',
+          align: 'center', valign: 'top', wrap: true,
         });
       });
 
-      currentY += rowHeight + 0.02;
+      currentY += rowH + 0.04;
     });
 
-    currentY += 0.05;
+    currentY += 0.1;
   });
 
-  // Summary at bottom
-  const summaryY = currentY + 0.1;
-  slide.addText(`Total: ${Object.keys(groupedData).length} Programs  |  ${roadmapData.length} Milestones`, {
-    x: 0.3,
-    y: summaryY,
-    w: 12.7,
-    h: 0.25,
-    fontSize: 9,
-    color: '666666',
-    align: 'center',
-    valign: 'middle'
-  });
+  // ── Footer ───────────────────────────────────────────────────────────────────
+  slide.addText(
+    `Total: ${Object.keys(groupedData).length} Programs  |  ${roadmapData.length} Milestones`,
+    {
+      x: labelX,
+      y: Math.min(currentY + 0.05, SLIDE_H - 0.26),
+      w: SLIDE_W - 0.6,
+      h: 0.22,
+      fontSize: 8, color: '777777', align: 'center', valign: 'middle',
+    }
+  );
 
-  // Generate and download
   pptx.writeFile({ fileName: '2025-Deliveries-Plan-on-a-Page.pptx' });
 };
