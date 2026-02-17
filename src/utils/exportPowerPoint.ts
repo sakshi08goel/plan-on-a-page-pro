@@ -125,7 +125,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   // ═══════════════════════════════════════════════════════════════
   //  STEP 6 — DYNAMIC AUTO-SCALING
-  //  Fixed: Bug 1 - Enhanced scaling to ensure content fits on ONE page
+  //  Enhanced scaling to ensure content fits on ONE page
   //  Measure total content height → compute vertical scale factor
   //  so everything fits in one slide.
   // ═══════════════════════════════════════════════════════════════
@@ -169,7 +169,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   y += TITLE_H;
 
   // ── Legend ───────────────────────────────────────────────────
-  // Fixed: Bug 2 - Prevent legend overlap by using proper spacing
+  // Prevent legend overlap by using proper spacing with explicit widths
   const legendItems: Array<{
     type: 'shape' | 'bar' | 'dash';
     shape?: string;
@@ -345,8 +345,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           }
         }
 
-// ── CRITICAL DEPENDENCY (red dashed line) ───────────────────
-        // Fixed: Bug 3 - Use separate Y lane for critical dependency to avoid overlap with Build Phase
+// ── CRITICAL DEPENDENCY (red dashed line) ─────────────────────────
+        // Position ABOVE the icon to avoid overlap with Build Phase bar
         const lt = m.milestoneType.toLowerCase();
         const isCritical = lt.includes('critical') || lt.includes('dependan');
         if (isCritical) {
@@ -357,7 +357,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           const tFrac     = target ? frac(target.plannedDeliveryDate) : Math.min(f + 0.15, 0.97);
           const lineStart = mX + scaledIconSize / 2 + 0.02;
           const lineEnd   = Math.min(TL_RIGHT - 0.02, toX(tFrac) - scaledIconSize / 2);
-          // Position critical dependency line ABOVE the icon to avoid overlap with Build Phase bar
+          // Position critical dependency line ABOVE the icon to separate from Build Phase bar
           const lineY     = iconY - 0.08;
 
           if (lineEnd > lineStart + 0.12) {
