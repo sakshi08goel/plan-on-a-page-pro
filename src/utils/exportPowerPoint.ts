@@ -190,8 +190,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   // Draw all programs
   let currentY = timelineY + 0.35;
-  const baseRowHeight = 0.55;
-  const milestoneVerticalSpacing = 0.2;
+  const baseRowHeight = 0.75;          // FIX 1: increased from 0.55 → 0.75 to give room for icon + text
+  const milestoneVerticalSpacing = 0.25; // FIX 2: increased from 0.2 → 0.25 for better stacking
 
   Object.entries(groupedData).forEach(([programName, items]) => {
     // Program header row
@@ -245,7 +245,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
       // Assign vertical offsets with better spacing
       const milestonesWithOffset: Array<any> = [];
-      const overlapThreshold = 8; // Increased to prevent label overlap
+      const overlapThreshold = 8;
       
       for (let idx = 0; idx < processedMilestones.length; idx++) {
         const milestone = processedMilestones[idx];
@@ -297,103 +297,126 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         line: { color: 'CCCCCC', width: 1 }
       });
 
-      // Draw build phases (at bottom to avoid milestone overlap)
-      milestonesWithOffset
-        // .filter(m => {
-        //   const type = m.milestoneType.toLowerCase();
-        //   return (type.includes('tech') && type.includes('drop')) || type === 'techdrop';
-        // })
-        .forEach(m => {
-          const endDate = new Date(m.plannedDeliveryDate);
-          const startDate = new Date(endDate);
-          startDate.setDate(startDate.getDate() - 63);
-          
-          const startPosition = calculatePosition(startDate.toISOString().slice(0, 10), "buildPhase");
-          const endPosition = m.position;
-          
-          const barX = timelineX + (startPosition / 100 * timelineWidth);
-          const barWidth = ((endPosition - startPosition) / 100 * timelineWidth);
-          
-          slide.addShape(pptx.ShapeType.rightArrow, {
-            x: barX,
-            y: currentY + rowHeight - 0.1,
-            w: barWidth,
-            h: 0.08,
-            fill: { color: 'FF8800' }
-          });
+      // Draw build phases
+      milestonesWithOffset.forEach(m => {
+        const endDate = new Date(m.plannedDeliveryDate);
+        const startDate = new Date(endDate);
+        startDate.setDate(startDate.getDate() - 63);
+        
+        const startPosition = calculatePosition(startDate.toISOString().slice(0, 10), "buildPhase");
+        const endPosition = m.position;
+        
+        const barX = timelineX + (startPosition / 100 * timelineWidth);
+        const barWidth = ((endPosition - startPosition) / 100 * timelineWidth);
+        
+        slide.addShape(pptx.ShapeType.rightArrow, {
+          x: barX,
+          y: currentY + rowHeight - 0.1,
+          w: barWidth,
+          h: 0.08,
+          fill: { color: 'FF8800' }
         });
+      });
 
       // Draw milestones
       milestonesWithOffset.forEach(milestone => {
         const milestoneX = timelineX + (milestone.position / 100 * timelineWidth);
         const offsetY = milestone.verticalOffset * milestoneVerticalSpacing;
-        const milestoneY = currentY + 0.1 + offsetY;
-        
-        let color = '28A745'; // green checkpoint
-        let size = 0.1;
-        
+
+        // ─────────────────────────────────────────────────────────────────
+        // FIX 3: The core overlap fix.
+        //
+        // OLD (broken) code placed both the icon AND the text at the same
+        // Y coordinate (milestoneY), so the shape drew directly on top of
+        // the label:
+        //
+        //   const milestoneY = currentY + 0.1 + offsetY;
+        //   slide.addShape(..., { y: milestoneY, h: size });   ← icon here
+        //   slide.addText(...,  { y: milestoneY + size + 0.02 }); ← text overlaps
+        //
+        // With small `size` values (0.10–0.12") and a text box height of
+        // only 0.16", the text box was not tall enough and sat underneath
+        // the icon at nearly the same pixel position.
+        //
+        // FIX: use separate, clearly spaced Y values:
+        //   iconY  = top of the icon shape
+        //   textY  = iconY + icon height + a visible gap (0.05")
+        //   textH  = 0.28" (tall enough to wrap 2 short lines at 7 pt)
+        // ─────────────────────────────────────────────────────────────────
+
         const lowerType = milestone.milestoneType.toLowerCase();
-        debugger
-        
-        if ((lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) || 
-            lowerType === 'key' || lowerType === 'star') {
+
+        let color = '28A745';
+        let size  = 0.13;    // unified icon size for all types
+
+        const iconY  = currentY + 0.06 + offsetY;  // icon top
+        const textY  = iconY + size + 0.05;         // text starts BELOW icon + gap
+        const textW  = 0.80;
+        const textH  = 0.28;                        // tall enough for 2-line wrap
+        const textX  = milestoneX - textW / 2;      // centred under icon
+
+        if (
+          (lowerType.includes('customer') && lowerType.includes('go') && lowerType.includes('live')) ||
+          lowerType === 'key' || lowerType === 'star'
+        ) {
           color = '9933CC'; // purple star
-          size = 0.12;
           slide.addShape(pptx.ShapeType.star6, {
-          x: milestoneX - (size / 2),
-          y: milestoneY,
-          w: size,
-          h: size,
-          fill: { color: color },
-          line: { color: color, width: 1 }
-        });
-        } else if ((lowerType.includes('tech') && lowerType.includes('drop')) || 
-                   lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop') {
+            x: milestoneX - size / 2,
+            y: iconY,                 // ← icon at iconY
+            w: size,
+            h: size,
+            fill: { color },
+            line: { color, width: 1 }
+          });
+
+        } else if (
+          (lowerType.includes('tech') && lowerType.includes('drop')) ||
+          lowerType === 'milestone' || lowerType === 'triangle' || lowerType === 'techdrop'
+        ) {
           color = '0266A6'; // dark blue triangle
-          size = 0.11;
           slide.addShape(pptx.ShapeType.triangle, {
-          x: milestoneX - (size / 2),
-          y: milestoneY,
-          w: size,
-          h: size,
-          fill: { color: color },
-          line: { color: color, width: 1 }
-        });
+            x: milestoneX - size / 2,
+            y: iconY,                 // ← icon at iconY
+            w: size,
+            h: size,
+            fill: { color },
+            line: { color, width: 1 }
+          });
+
         } else {
-        // Draw milestone marker
-        slide.addShape(pptx.ShapeType.ellipse, {
-          x: milestoneX - (size / 2),
-          y: milestoneY,
-          w: size,
-          h: size,
-          fill: { color: color },
-          line: { color: color, width: 1 }
-        });
+          // Checkpoint / Critical Dependency — green ellipse
+          slide.addShape(pptx.ShapeType.ellipse, {
+            x: milestoneX - size / 2,
+            y: iconY,                 // ← icon at iconY
+            w: size,
+            h: size,
+            fill: { color },
+            line: { color, width: 1 }
+          });
         }
-        
-        
-        
-        // Add milestone label with better spacing
-        const labelText = milestone.deliveryMilestone.length > 30 
-          ? milestone.deliveryMilestone.substring(0, 28) + '...' 
+
+        // Text label — now sits BELOW the icon, not on top of it
+        const labelText = milestone.deliveryMilestone.length > 30
+          ? milestone.deliveryMilestone.substring(0, 28) + '…'
           : milestone.deliveryMilestone;
-          
+
         slide.addText(labelText, {
-          x: milestoneX - 0.35,
-          y: milestoneY + size + 0.02,
-          w: 0.7,
-          h: 0.16,
-          fontSize: 7,
+          x: textX,
+          y: textY,    // ← text at textY (= iconY + size + gap)
+          w: textW,
+          h: textH,
+          fontSize: 6.5,
           color: '1a1a1a',
           align: 'center',
-          breakLine: true
+          valign: 'top',
+          wrap: true,  // FIX 4: allow wrapping so long names don't overflow
         });
       });
 
       currentY += rowHeight + 0.02;
     });
 
-    currentY += 0.05; // Extra space between programs
+    currentY += 0.05;
   });
 
   // Summary at bottom
