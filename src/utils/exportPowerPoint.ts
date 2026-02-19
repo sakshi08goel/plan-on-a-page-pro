@@ -125,10 +125,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   // ═══════════════════════════════════════════════════════════════
   //  STEP 6 — DYNAMIC AUTO-SCALING
-<<<<<<< HEAD
-  //  Fixed: Bug 1 - Enhanced scaling to ensure content fits on ONE page
-=======
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
+  //  Enhanced scaling to ensure content fits on ONE page
   //  Measure total content height → compute vertical scale factor
   //  so everything fits in one slide.
   // ═══════════════════════════════════════════════════════════════
@@ -139,11 +136,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   const PROG_GAP   = 0.06;
   const JOURNEY_GAP = 0.03;
   const FOOTER_H   = 0.22;
-<<<<<<< HEAD
   const FIXED_H    = TITLE_H + LEGEND_H + QHEADER_H + FOOTER_H + 0.15; // Reduced padding for tighter fit
-=======
-  const FIXED_H    = TITLE_H + LEGEND_H + QHEADER_H + FOOTER_H + 0.20; // non-data area
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
 
   let totalContentH = 0;
   for (const [, journeys] of Object.entries(groupedData)) {
@@ -155,12 +148,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
 
   const availableH = SH - FIXED_H;
   // scale factor to shrink everything to fit (max 1.0 — never upscale)
-<<<<<<< HEAD
   // Add 5% safety margin to ensure content doesn't overflow
   const SCALE = Math.min(1.0, (availableH * 0.95) / totalContentH);
-=======
-  const SCALE = Math.min(1.0, availableH / totalContentH);
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
 
   const sc = (v: number) => v * SCALE; // apply scale to vertical measurements
 
@@ -180,17 +169,12 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
   y += TITLE_H;
 
   // ── Legend ───────────────────────────────────────────────────
-<<<<<<< HEAD
-  // Fixed: Bug 2 - Prevent legend overlap by using proper spacing
-=======
-  // Dynamically spaced across the available width
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
+  // Prevent legend overlap by using proper spacing with explicit widths
   const legendItems: Array<{
     type: 'shape' | 'bar' | 'dash';
     shape?: string;
     color: string;
     label: string;
-<<<<<<< HEAD
     width: number;  // Add explicit width for each item
   }> = [
     { type: 'shape', shape: 'star6',    color: '9933CC', label: 'Customer Go Live',    width: 2.2 },
@@ -205,20 +189,6 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
     const lx = legendX;
     const ly = y + 0.02;
     legendX += item.width;  // Increment by item width to prevent overlap
-=======
-  }> = [
-    { type: 'shape', shape: 'star6',    color: '9933CC', label: 'Customer Go Live'    },
-    { type: 'shape', shape: 'triangle', color: '0266A6', label: 'Tech Drop'            },
-    { type: 'shape', shape: 'ellipse',  color: '28A745', label: 'Checkpoint'           },
-    { type: 'bar',                      color: 'FF8800', label: 'Build Phase'          },
-    { type: 'dash',                     color: 'EE3333', label: 'Critical Dependency'  },
-  ];
-  const legendIconW = 0.13;
-  const legendGap   = (SW - MARGIN_L - MARGIN_R) / legendItems.length;
-  legendItems.forEach((item, i) => {
-    const lx = MARGIN_L + i * legendGap;
-    const ly = y + 0.02;
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
 
     if (item.type === 'shape' && item.shape) {
       slide.addShape((pptx.ShapeType as any)[item.shape], {
@@ -226,11 +196,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         fill: { color: item.color }, line: { color: item.color, width: 0 },
       });
       slide.addText(item.label, {
-<<<<<<< HEAD
         x: lx + legendIconW + 0.04, y: ly, w: item.width - legendIconW - 0.08, h: legendIconW,
-=======
-        x: lx + legendIconW + 0.04, y: ly, w: legendGap - legendIconW - 0.06, h: legendIconW,
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
         fontSize: 7, color: '333333', valign: 'middle',
       });
     } else if (item.type === 'bar') {
@@ -244,11 +210,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         fontSize: 5.5, color: 'FFFFFF', bold: true, align: 'center', valign: 'middle',
       });
       slide.addText(item.label, {
-<<<<<<< HEAD
         x: lx + bw + 0.05, y: ly, w: item.width - bw - 0.10, h: legendIconW,
-=======
-        x: lx + bw + 0.05, y: ly, w: legendGap - bw - 0.07, h: legendIconW,
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
         fontSize: 7, color: '333333', valign: 'middle',
       });
     } else if (item.type === 'dash') {
@@ -264,11 +226,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         });
       }
       slide.addText(item.label, {
-<<<<<<< HEAD
         x: lx + 0.50, y: ly, w: item.width - 0.55, h: legendIconW,
-=======
-        x: lx + 0.50, y: ly, w: legendGap - 0.52, h: legendIconW,
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
         fontSize: 7, color: '333333', valign: 'middle',
       });
     }
@@ -387,12 +345,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           }
         }
 
-<<<<<<< HEAD
-// ── CRITICAL DEPENDENCY (red dashed line) ───────────────────
-        // Fixed: Bug 3 - Use separate Y lane for critical dependency to avoid overlap with Build Phase
-=======
-        // ── CRITICAL DEPENDENCY (red dashed line) ─────────────────────────
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
+// ── CRITICAL DEPENDENCY (red dashed line) ─────────────────────────
+        // Position ABOVE the icon to avoid overlap with Build Phase bar
         const lt = m.milestoneType.toLowerCase();
         const isCritical = lt.includes('critical') || lt.includes('dependan');
         if (isCritical) {
@@ -403,12 +357,8 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           const tFrac     = target ? frac(target.plannedDeliveryDate) : Math.min(f + 0.15, 0.97);
           const lineStart = mX + scaledIconSize / 2 + 0.02;
           const lineEnd   = Math.min(TL_RIGHT - 0.02, toX(tFrac) - scaledIconSize / 2);
-<<<<<<< HEAD
-          // Position critical dependency line ABOVE the icon to avoid overlap with Build Phase bar
+          // Position critical dependency line ABOVE the icon to separate from Build Phase bar
           const lineY     = iconY - 0.08;
-=======
-          const lineY     = iconY + scaledIconSize / 2;
->>>>>>> a1d17e23b2c716508b0c7a10b3b4fc378e7588f9
 
           if (lineEnd > lineStart + 0.12) {
             const SEG = 0.09, GAP = 0.05;
