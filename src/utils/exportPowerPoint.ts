@@ -304,15 +304,20 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         const iconY = y + scaledIconVpad + vOff;
         const textY = iconY + scaledIconSize + scaledTextBelow;
 
+        // Icon left edge — used for bar end and icon placement
+        const iconX = mX - scaledIconSize / 2;
+
         // ── BUILD PHASE BAR ─────────────────────────────────────────────────
-        // Bar starts 63 days before the milestone and ends AT the milestone X.
+        // Bar starts 63 days before the milestone and ends at the LEFT EDGE of the icon.
+        // FIX: barRight should be iconX (left edge of icon), not mX (center of icon),
+        // so the bar visually leads up to the icon without overlapping underneath it.
         const buildStartDate = new Date(m.plannedDeliveryDate);
         buildStartDate.setDate(buildStartDate.getDate() - 63);
         const bFrac  = frac(buildStartDate.toISOString().slice(0, 10));
 
         // CRITICAL FIX: both edges clamped inside [TL_X, TL_RIGHT]
-        const barLeft  = Math.max(TL_X,     toX(bFrac));
-        const barRight = Math.min(TL_RIGHT,  mX);            // ends AT the icon, never beyond
+        const barLeft  = Math.max(TL_X,      toX(bFrac));
+        const barRight = Math.min(TL_RIGHT,  iconX);  // FIX: ends at icon LEFT EDGE, not center
         const barW     = barRight - barLeft;
 
         const BAR_HEIGHT = Math.max(0.10, 0.16 * SCALE);
@@ -345,8 +350,9 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           }
         }
 
-// ── CRITICAL DEPENDENCY (red dashed line) ─────────────────────────
-        // Position ABOVE the icon to avoid overlap with Build Phase bar
+        // ── CRITICAL DEPENDENCY (red dashed line) ─────────────────────────
+        // FIX: Draw line at the vertical centre of the icon (iconY + scaledIconSize/2)
+        // so it aligns with the milestone marker, matching the portal rendering.
         const lt = m.milestoneType.toLowerCase();
         const isCritical = lt.includes('critical') || lt.includes('dependan');
         if (isCritical) {
@@ -355,10 +361,14 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
             r.deliveryMilestone === impactOn || r.journey === impactOn
           );
           const tFrac     = target ? frac(target.plannedDeliveryDate) : Math.min(f + 0.15, 0.97);
+
+          // FIX: line starts from the RIGHT edge of the source icon
           const lineStart = mX + scaledIconSize / 2 + 0.02;
           const lineEnd   = Math.min(TL_RIGHT - 0.02, toX(tFrac) - scaledIconSize / 2);
-          // Position critical dependency line ABOVE the icon to separate from Build Phase bar
-          const lineY     = iconY - 0.08;
+
+          // FIX: draw the dashed line at the vertical centre of the icon
+          // (was: iconY - 0.08 which placed it above the row, detached from the icon)
+          const lineY = iconY + scaledIconSize / 2;
 
           if (lineEnd > lineStart + 0.12) {
             const SEG = 0.09, GAP = 0.05;
@@ -370,6 +380,7 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
               });
               sx += SEG + GAP;
             }
+            // Arrowhead triangle at end of dashed line
             slide.addShape(pptx.ShapeType.triangle, {
               x: lineEnd - 0.09, y: lineY - 0.045, w: 0.09, h: 0.09,
               fill: { color: 'EE3333' }, line: { color: 'EE3333', width: 0 },
@@ -379,8 +390,6 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         }
 
         // ── MILESTONE ICON (drawn ON TOP of bar) ──────────────────────────
-        const iconX = mX - scaledIconSize / 2;
-
         if (
           (lt.includes('customer') && lt.includes('go') && lt.includes('live')) ||
           lt === 'key' || lt === 'star'
