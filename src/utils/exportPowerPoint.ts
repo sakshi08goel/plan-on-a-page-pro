@@ -315,9 +315,10 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
         buildStartDate.setDate(buildStartDate.getDate() - 63);
         const bFrac  = frac(buildStartDate.toISOString().slice(0, 10));
 
-        // CRITICAL FIX: both edges clamped inside [TL_X, TL_RIGHT]
-        const barLeft  = Math.max(TL_X,      toX(bFrac));
-        const barRight = Math.min(TL_RIGHT,  iconX);  // FIX: ends at icon LEFT EDGE, not center
+        // Both edges strictly clamped inside [TL_X, TL_RIGHT]
+        // barRight = iconX (left edge of icon) so bar leads UP TO icon, never overlaps or overshoots
+        const barLeft  = Math.max(TL_X,           toX(bFrac));
+        const barRight = Math.min(TL_RIGHT - 0.01, iconX);
         const barW     = barRight - barLeft;
 
         const BAR_HEIGHT = Math.max(0.10, 0.16 * SCALE);
@@ -362,27 +363,31 @@ export const exportToPowerPoint = (roadmapData: RoadmapData[]) => {
           );
           const tFrac     = target ? frac(target.plannedDeliveryDate) : Math.min(f + 0.15, 0.97);
 
-          // FIX: line starts from the RIGHT edge of the source icon
+          // Line starts from RIGHT edge of the source icon
           const lineStart = mX + scaledIconSize / 2 + 0.02;
-          const lineEnd   = Math.min(TL_RIGHT - 0.02, toX(tFrac) - scaledIconSize / 2);
+          // Arrow triangle is 0.09 wide — clamp so arrowhead tip never exceeds TL_RIGHT
+          const ARROW_W   = 0.09;
+          const rawLineEnd = target
+            ? toX(tFrac) - scaledIconSize / 2   // stop at left edge of target icon
+            : toX(Math.min(f + 0.15, 0.99));
+          const lineEnd = Math.min(TL_RIGHT - ARROW_W - 0.02, rawLineEnd);
 
-          // FIX: draw the dashed line at the vertical centre of the icon
-          // (was: iconY - 0.08 which placed it above the row, detached from the icon)
+          // Draw the dashed line at the vertical centre of the icon
           const lineY = iconY + scaledIconSize / 2;
 
           if (lineEnd > lineStart + 0.12) {
             const SEG = 0.09, GAP = 0.05;
             let sx = lineStart;
-            while (sx + SEG < lineEnd - 0.10) {
+            while (sx + SEG <= lineEnd - ARROW_W - 0.02) {
               slide.addShape(pptx.ShapeType.line, {
                 x: sx, y: lineY, w: SEG, h: 0,
                 line: { color: 'EE3333', width: 1.8 },
               });
               sx += SEG + GAP;
             }
-            // Arrowhead triangle at end of dashed line
+            // Arrowhead — strictly inside TL_RIGHT
             slide.addShape(pptx.ShapeType.triangle, {
-              x: lineEnd - 0.09, y: lineY - 0.045, w: 0.09, h: 0.09,
+              x: lineEnd, y: lineY - ARROW_W / 2, w: ARROW_W, h: ARROW_W,
               fill: { color: 'EE3333' }, line: { color: 'EE3333', width: 0 },
               rotate: 90,
             });
